@@ -8,10 +8,14 @@ class Product
         $this->connection = $connection;
     }
 
-    // Método GET para consultar todos los productos
+    // Método GET para consultar todos los productos con sus categorías 
     public function getProducts()
     {
-        $getProducts = "SELECT * FROM products ORDER BY product_name";
+        $getProducts = "SELECT p.*, cat.category_name AS categories
+        FROM products p 
+        INNER JOIN categories cat ON p.fo_category = cat.id_category
+        ORDER BY product_name";
+
         $res = mysqli_query($this->connection, $getProducts);
         $products = [];
 
@@ -21,12 +25,16 @@ class Product
         return $products;
     }
 
-    // Método GET para consultar un producto por ID
+    // Método GET para consultar un producto por ID con sus categorías 
     public function getProductById($id)
     {
-        $getProduct = "SELECT * FROM products WHERE id_product = ?";
-        $stmt = $this->connection->prepare($getProduct);
+        $getProduct = "SELECT p.*, cat.category_name AS category
+            FROM products p
+            INNER JOIN categories cat ON p.fo_category = cat.id_category
+            WHERE p.id_product = ?
+            ORDER BY p.product_name";
 
+        $stmt = $this->connection->prepare($getProduct);
         if ($stmt === false) {
             return [
                 "result" => "Error",
@@ -37,6 +45,7 @@ class Product
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $res = $stmt->get_result();
+
         $product = $res->fetch_assoc();
 
         if (!$product) {
@@ -185,18 +194,37 @@ class Product
         ];
     }
 
-    // MÉTODO FILTRAR
-    public function filterProduct($value)
+    // MÉTODO FILTRAR para consultar productos por nombre, tipo o categoría
+    public function filterProducts($value)
     {
-        $filterProduct = "SELECT * FROM products WHERE product_name LIKE '%$value%";
-        $res = mysqli_query($this->connection, $filterProduct);
-        $result = [];
+        $filterProducts = "SELECT p.*, cat.category_name AS category
+            FROM products p
+            INNER JOIN categories cat ON p.fo_category = cat.id_category
+            WHERE p.product_name LIKE ? 
+               OR p.product_type LIKE ? 
+               OR cat.category_name LIKE ?
+            ORDER BY p.product_name";
 
-        while ($row = mysqli_fetch_array($res)) {
-            $result[] = $row;
+        $stmt = $this->connection->prepare($filterProducts);
+        if ($stmt === false) {
+            return [
+                "result" => "Error",
+                "message" => "Error al preparar la consulta: " . $this->connection->error
+            ];
         }
-        return $result;
 
+        // Se prepara el valor para los filtros de búsqueda
+        $likeValue = "%$value%";
+        $stmt->bind_param("sss", $likeValue, $likeValue, $likeValue);
+        $stmt->execute();
+        $res = $stmt->get_result();
+
+        $products = [];
+        while ($row = $res->fetch_assoc()) {
+            $products[] = $row;
+        }
+
+        return $products;
     }
 }
 

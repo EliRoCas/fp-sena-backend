@@ -12,11 +12,15 @@ class Transaction
     // MÉTODO GET para consultar todas las transacciones
     public function getTransactions()
     {
-        $getTransactions = "SELECT * FROM transactions ORDER BY transaction_date";
+        $getTransactions = "SELECT trans.*, cat.category_name AS category_name
+            FROM transactions trans
+            INNER JOIN categories cat ON trans.fo_category = cat.id_category
+            ORDER BY trans.transaction_date";
+
         $res = mysqli_query($this->connection, $getTransactions);
         $transactions = [];
 
-        while ($row = mysqli_fetch_array($res)) {
+        while ($row = mysqli_fetch_array($res, MYSQLI_ASSOC)) {
             $transactions[] = $row;
         }
         return $transactions;
@@ -25,7 +29,11 @@ class Transaction
     // Método GET para consultar una transacción por ID
     public function getTransactionById($id)
     {
-        $getTransaction = "SELECT * FROM transactions WHERE id_transaction = ?";
+        $getTransaction = "SELECT trans.*, cat.category_name AS category_name
+            FROM transactions trans
+            INNER JOIN categories cat ON trans.fo_category = cat.id_category
+            WHERE  trans.id_transaction = ?";
+
         $stmt = $this->connection->prepare($getTransaction);
 
         if ($stmt === false) {
@@ -185,15 +193,33 @@ class Transaction
     // MÉTODO FILTRAR
     public function filterTransaction($value)
     {
-        $filterTransaction = "SELECT * FROM transactions WHERE transaction_name LIKE '%$value%";
-        $res = mysqli_query($this->connection, $filterTransaction);
-        $result = [];
+        $filterTransaction = "SELECT trans.*, cat.category_name AS category_name
+            FROM transactions trans
+            INNER JOIN categories cat ON trans.fo_category = cat.id_category
+            WHERE trans.transaction_name LIKE ?";
 
-        while ($row = mysqli_fetch_array($res)) {
+        // Preparamos la consulta
+        $stmt = $this->connection->prepare($filterTransaction);
+
+        if ($stmt === false) {
+            return [
+                "result" => "Error",
+                "message" => "Error al preparar la consulta: " . $this->connection->error
+            ];
+        }
+
+        // Usamos parámetros preparados para evitar inyección SQL
+        $searchValue = "%{$value}%";
+        $stmt->bind_param("s", $searchValue);
+        $stmt->execute();
+        $res = $stmt->get_result();
+
+        $result = [];
+        while ($row = $res->fetch_assoc()) {
             $result[] = $row;
         }
-        return $result;
 
+        return $result;
     }
 }
 ?>

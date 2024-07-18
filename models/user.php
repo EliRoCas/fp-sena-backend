@@ -10,19 +10,15 @@ class User
     // MÉTODO GET para consultar todos los usuarios con sus roles y tipos de documento
     public function getUsers()
     {
-        $getUsers = "SELECT 
-                users.id_user,
-                users.user_name,
-                users.user_lastname,
-                document_types.document_type_name,
-                users.document_number,
-                users.email,
-                user_roles.role_name
-        FROM  users
-        INNER JOIN document_types ON users.fo_document_type = document_types.id_document_type
-        LEFT JOIN user_roles_assignments ON users.id_user = user_roles_assignments.fo_user
-        LEFT JOIN user_roles ON user_roles_assignments.fo_user_role = user_roles.id_user_role
-         ORDER BY users.user_name; ";
+        //Se establece la consulta utilizando inner join y left join para asegurar todos los campos requeridos. 
+        // Además, se utiliza el 'GROUP_CONCAT' para combinar todos los roles asociados a un usuario en una sola col. 
+        $getUsers = "SELECT u.*, doc.document_type_name, GROUP_CONCAT(uRol.role_name SEPARATOR ', ') AS roles
+            FROM users u
+            INNER JOIN document_types doc ON u.fo_document_type = doc.id_document_type
+            LEFT JOIN user_roles_assignments uRolAss ON u.id_user = uRolAss.fo_user
+            LEFT JOIN user_roles uRol ON uRolAss.fo_user_role = uRol.id_user_role
+            GROUP BY u.id_user
+            ORDER BY u.user_name";
 
         $res = mysqli_query($this->connection, $getUsers);
         $users = [];
@@ -37,19 +33,13 @@ class User
     // Método GET para consultar un usuario por ID
     public function getUserById($id)
     {
-        $getUser = "SELECT 
-                users.id_user,
-                users.user_name,
-                users.user_lastname,
-                document_types.document_type_name,
-                users.document_number,
-                users.email,
-                user_roles.role_name
-        FROM users
-        INNER JOIN document_types ON users.fo_document_type = document_types.id_document_type
-        LEFT JOIN  user_roles_assignments ON users.id_user = user_roles_assignments.fo_user
-        LEFT JOIN  user_roles ON user_roles_assignments.fo_user_role = user_roles.id_user_role
-         WHERE users.id_user = ?; ";
+        $getUser = "SELECT u.*, doc.document_type_name, GROUP_CONCAT(uRol.role_name SEPARATOR ', ') AS roles
+            FROM users u
+            INNER JOIN document_types doc ON u.fo_document_type = doc.id_document_type
+            LEFT JOIN user_roles_assignments uRolAss ON u.id_user = uRolAss.fo_user
+            LEFT JOIN user_roles uRol ON uRolAss.fo_user_role = uRol.id_user_role
+            WHERE u.id_user = ?
+            GROUP BY u.id_user";
 
         $stmt = $this->connection->prepare($getUser);
         if ($stmt === false) {
@@ -59,15 +49,20 @@ class User
             ];
         }
 
+        // Se vincula el parámetro '$id' a la consulta
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $res = $stmt->get_result();
 
-        if ($res->num_rows === 0) {
-            return null; // Si no se encuentra el usuario
+        $user = $res->fetch_assoc();
+
+        if (!$user) {
+            return [
+                "result" => "Error",
+                "message" => "Usuario no encontrado"
+            ];
         }
 
-        $user = $res->fetch_assoc();
         return $user;
     }
 
@@ -203,14 +198,34 @@ class User
     // MÉTODO FILTRAR
     public function filterUser($value)
     {
-        $filterUser = "SELECT * FROM users WHERE user_name LIKE '%$value%";
-        $res = mysqli_query($this->connection, $filterUser);
-        $result = [];
+        $filterUser = "SELECT u.*, doc.document_type_name, GROUP_CONCAT(uRol.role_name SEPARATOR ', ') AS roles
+            FROM users u
+            INNER JOIN document_types doc ON u.fo_document_type = doc.id_document_type
+            LEFT JOIN user_roles_assignments uRolAss ON u.id_user = uRolAss.fo_user
+            LEFT JOIN user_roles uRol ON uRolAss.fo_user_role = uRol.id_user_role
+            WHERE u.user_name LIKE ?
+            GROUP BY u.id_user";
 
-        while ($row = mysqli_fetch_array($res)) {
-            $result[] = $row;
+        $stmt = $this->connection->prepare($filterUser);
+        if ($stmt === false) {
+            return [
+                "result" => "Error",
+                "message" => "Error al preparar la consulta: " . $this->connection->error
+            ];
         }
-        return $result;
+
+        // Se vincula el parámetro '$value' a la consulta
+        $likeValue = "%$value%";
+        $stmt->bind_param("s", $likeValue);
+        $stmt->execute();
+        $res = $stmt->get_result();
+
+        $users = [];
+        while ($row = $res->fetch_assoc()) {
+            $users[] = $row;
+        }
+
+        return $users;
 
     }
 }

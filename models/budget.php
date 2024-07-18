@@ -11,7 +11,10 @@ class Budget
     // Método GET para consultar todos los presupuestos
     public function getBudgets()
     {
-        $getBudgets = "SELECT * FROM budgets ORDER BY budget_date";
+        $getBudgets = "SELECT bud.*, cat.category_name AS categories 
+        FROM budgets 
+        INNER JOIN categories cat ON bud.fo_category = cat.id_category
+        ORDER BY budget_date";
         $res = mysqli_query($this->connection, $getBudgets);
         $budgets = [];
 
@@ -21,12 +24,16 @@ class Budget
         return $budgets;
     }
 
-    // Método GET para consultar un presupuesto por ID
+    // MÉTODO GET para consultar un presupuesto por ID con su categoría
     public function getBudgetById($id)
     {
-        $getBudget = "SELECT * FROM budgets WHERE id_budget = ?";
-        $stmt = $this->connection->prepare($getBudget);
+        $getBudget = "SELECT bud.*, cat.category_name AS category
+            FROM budgets bud
+            INNER JOIN categories cat ON bud.fo_category = cat.id_category
+            WHERE bud.id_budget = ?
+            ORDER BY bud.budget_date";
 
+        $stmt = $this->connection->prepare($getBudget);
         if ($stmt === false) {
             return [
                 "result" => "Error",
@@ -37,6 +44,7 @@ class Budget
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $res = $stmt->get_result();
+
         $budget = $res->fetch_assoc();
 
         if (!$budget) {
@@ -169,18 +177,38 @@ class Budget
         ];
     }
 
-    // Método FILTRAR para buscar presupuestos por descripción
-    public function filterBudget($value)
+    // MÉTODO FILTRAR para consultar presupuestos por fecha, cantidad o categoría
+    public function filterBudgets($value)
     {
-        $filterBudget = "SELECT * FROM budgets WHERE description_budget LIKE '%$value%";
-        $res = mysqli_query($this->connection, $filterBudget);
-        $result = [];
+        $filterBudgets = "SELECT bud.*, cat.category_name AS category
+            FROM budgets bud
+            INNER JOIN categories cat ON bud.fo_category = cat.id_category
+            WHERE bud.budget_date LIKE ? 
+               OR bud.amount LIKE ? 
+               OR cat.category_name LIKE ?
+            ORDER BY bud.budget_date";
 
-        while ($row = mysqli_fetch_array($res)) {
-            $result[] = $row;
+        $stmt = $this->connection->prepare($filterBudgets);
+        if ($stmt === false) {
+            return [
+                "result" => "Error",
+                "message" => "Error al preparar la consulta: " . $this->connection->error
+            ];
         }
-        return $result;
 
+        // Se prepara el valor para los filtros de búsqueda
+        $likeValue = "%$value%";
+        $stmt->bind_param("sss", $likeValue, $likeValue, $likeValue);
+        $stmt->execute();
+        $res = $stmt->get_result();
+
+        $budgets = [];
+        while ($row = $res->fetch_assoc()) {
+            $budgets[] = $row;
+        }
+
+        return $budgets;
     }
+
 }
 ?>

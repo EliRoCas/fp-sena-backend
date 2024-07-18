@@ -10,44 +10,64 @@ class Category
         $this->connection = $connection;
     }
 
-    // Método para consultar todas las categorías
-    public function getAll()
+    // Método para consultar todas las categorías con sus subcategorías
+    public function getCategories()
     {
-        $getCategory = "SELECT * FROM categories ORDER BY category_name";
+        // Se ejecuta la consulta SQL con el método left join para asegurar que se obtengan los resultados de las 
+        // categorías con y sin subcategorías. 
+        $getCategories = "SELECT cat.*, sub.id_subcategory, sub.subcategory_name AS subcategory_name
+            FROM 
+                categories cat
+            LEFT JOIN 
+                subcategories sub ON cat.id_category = sub.fo_category
+            ORDER BY 
+                cat.category_name, sub.subcategory_name
+        ";
 
-        //Se prepara la consulta con una conexión a la DB 
-        //la variable $stmt es una instancia de la clase "mysqli_stmt" para sentencias SQL preparadas
-        $stmt = $this->connection->prepare($getCategory);
-
-        // Verificar si la preparación fue exitosa
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
-        }
-
-        // Se ejecuta la consulta preparada, se utiliza "GET" para obtener el resultado y se inicializa un array vacío para
-        // almacenar las categoráis obtenidas
-        $stmt->execute();
-        $res = $stmt->get_result();
+        // Se envía y ejecuta la consulta por medio de la función "mysqli_query" y se determina la conexión
+        // Además, se inicializa un array vacío que contendrá los datos de la iteración del bucle while. 
+        $res = mysqli_query($this->connection, $getCategories);
         $categories = [];
 
-        // Se utiliza un bucle 'while' que recorre cada fila (row) del resultado y la agrega al arreglo '$categories',
-        // utilizando el método 'fetch_assoc'
-        while ($row = $res->fetch_assoc()) {
-            $categories[] = $row;
+        // Se obtiene una fila de datos "mysqli...ASSOC)" con el resultado de la iteración, en donde row contendrá 
+        // los nombre de columna como claves del array. 
+        while ($row = mysqli_fetch_array($res, MYSQLI_ASSOC)) {
+            //Se identifica la categoría actual por su id, para organizar el array 
+            $categoryId = $row['id_category'];
+            // Se verifica el si el objeto con el "id_category" identifica se encuentra o no en el array para continuar 
+            // con el proceso. 
+            if (!isset($categories[$categoryId])) {
+                //Si no se encuentra, se inicializa el proceso y se crea una nueva entrada en el array con los datos dados
+                $categories[$categoryId] = [
+                    'id_category' => $row['id_category'],
+                    'category_name' => $row['category_name'],
+                    'subcategories' => []
+                ];
+            }
+            // Se hace una validación similiar a la anterior, para determinar los datos que se contendrán en las filas de las subcategorias
+            if (!is_null($row['id_subcategory'])) {
+                $categories[$categoryId]['subcategories'][] = [
+                    'id_subcategory' => $row['id_subcategory'],
+                    'subcategory_name' => $row['subcategory_name']
+                ];
+            }
         }
 
-        return $categories;
+        return array_values($categories);
     }
 
-    // Método GET para consultar una categoría por ID
+
+    // MÉTODO GET para consultar una categoría por ID con sus subcategorías
     public function getCategoryById($id)
     {
-        $getCategory = "SELECT * FROM users WHERE id_user = ?";
-        $stmt = $this->connection->prepare($getCategory);
+        $getCategory = "SELECT cat * sub.id_subcategory, sub.subcategory_name AS subcategory_name
+           FROM categories cat
+           LEFT JOIN subcategories sub ON cat.id_category = sub.fo_category
+           WHERE cat.id_category = ?
+           ORDER BY sub.subcategory_name;
+       ";
 
+        $stmt = $this->connection->prepare($getCategory);
         if ($stmt === false) {
             return [
                 "result" => "Error",
@@ -55,19 +75,26 @@ class Category
             ];
         }
 
-        // Se vincula el parámetro '$id' a la consulta
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $res = $stmt->get_result();
-        $category = $res->fetch_assoc();
 
-        if (!$category) {
-            return [
-                "result" => "Error",
-                "message" => "Usuario no encontrado"
-            ];
+        $category = null;
+        while ($row = $res->fetch_assoc()) {
+            if ($category === null) {
+                $category = [
+                    'id_category' => $row['id_category'],
+                    'category_name' => $row['category_name'],
+                    'subcategories' => []
+                ];
+            }
+            if (!empty($row['id_subcategory'])) {
+                $category['subcategories'][] = [
+                    'id_subcategory' => $row['id_subcategory'],
+                    'subcategory_name' => $row['subcategory_name']
+                ];
+            }
         }
-
         return $category;
     }
 
@@ -166,17 +193,47 @@ class Category
     // Método para filtrar por un valor/nombre en particular
     public function filter($value)
     {
-        // Se crea la consulta SQL para seleccionar todas las filas de la tabla donde el nombre contenga el
-        // valor dado en '$value'. Se incluye (%) para indicar que cualquier dato puede estar antes o después del valor
-        $filter = "SELECT * FROM categories WHERE category_name LIKE '%$value%";
-        // Se ejecuta la consulta por medio de la cadena de conexión
-        $res = mysqli_query($this->connection, $filter);
-        $result = [];
+        // Preparamos la consulta SQL
+        $filter = "SELECT 
+                    cat.id_category, 
+                    cat.category_name AS category_name, 
+                    sub.id_subcategory, 
+                    sub.subcategory_name 
+                FROM 
+                    categories cat
+                INNER JOIN 
+                    subcategories sub ON cat.id_category = sub.fo_category
+                WHERE 
+                    cat.id_category LIKE ? 
+                    OR cat.category_name LIKE ? 
+                    OR sub.subcategory_name LIKE ?";
 
-        while ($row = mysqli_fetch_array($res)) {
-            $result[] = $row;
+        // Preparamos la consulta
+        $stmt = $this->connection->prepare($filter);
+
+        if ($stmt === false) {
+            return [
+                "result" => "Error",
+                "message" => "Error al preparar la consulta: " . $this->connection->error
+            ];
         }
-        return $result;
+
+        // Usamos parámetros preparados para evitar inyección SQL
+        // Se incluye (%) para indicar que cualquier dato puede estar antes o después del valor
+        $searchValue = "%{$value}%";
+        $stmt->bind_param("sss", $searchValue, $searchValue, $searchValue);
+
+        // Ejecutamos la consulta
+        $stmt->execute();
+        $res = $stmt->get_result();
+
+        // Recogemos los resultados
+        $results = [];
+        while ($row = $res->fetch_assoc()) {
+            $results[] = $row;
+        }
+
+        return $results;
     }
 }
 ?>

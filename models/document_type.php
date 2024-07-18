@@ -1,5 +1,5 @@
 <?php
-class User_role
+class DocumentType
 {
     public $connection;
 
@@ -8,24 +8,24 @@ class User_role
         $this->connection = $connection;
     }
 
-    //MÉTODO GET para consultar todos los roles 
-    public function getRol()
+    //MÉTODO GET para consultar todos los tipos de documentos 
+    public function getDocumentType()
     {
-        $getRol = "SELECT * FROM user_roles ORDER BY role_name";
-        $res = mysqli_query($this->connection, $getRol);
-        $role_name = [];
+        $getDocumentType = "SELECT * FROM document_types ORDER BY document_type_name";
+        $res = mysqli_query($this->connection, $getDocumentType);
+        $document_type_name = [];
 
         while ($row = mysqli_fetch_array($res)) {
-            $role_name[] = $row;
+            $document_type_name[] = $row;
         }
 
-        return $role_name;
+        return $document_type_name;
     }
 
-    // MÉTODO DELETE 
+    //MÉTODO DELETE 
     public function delete($id)
     {
-        $delete = "DELETE FROM user_roles WHERE id_user_role = ?";
+        $delete = "DELETE FROM document_types WHERE id_document_type = ?";
         $stmt = $this->connection->prepare($delete);
 
         if ($stmt === false) {
@@ -48,21 +48,21 @@ class User_role
 
         return [
             "result" => "OK",
-            "message" => "El rol ha sido eliminado"
+            "message" => "Se ha eliminado el tipo de documento"
         ];
     }
 
     // Método ADD 
     public function add($params)
     {
-        if (!isset($params["role_name"])) {
+        if (!isset($params["document_type_name"])) {
             return [
                 "result" => "Error",
                 "message" => "Todos los campos son requeridos"
             ];
         }
 
-        $add = "INSERT INTO user_roles (role_name) VALUES (?)";
+        $add = "INSERT INTO document_types (document_type_name) VALUES (?)";
         $stmt = $this->connection->prepare($add);
 
         if ($stmt === false) {
@@ -72,7 +72,7 @@ class User_role
             ];
         }
 
-        $stmt->bind_param("s", $params["role_name"]);
+        $stmt->bind_param("s", $params["document_type_name"]);
         $result = $stmt->execute();
 
         if ($result === false) {
@@ -84,21 +84,21 @@ class User_role
 
         return [
             "result" => "OK",
-            "message" => "El rol ha sido agregado"
+            "message" => "Se ha agregado el tipo de documento"
         ];
     }
 
     // MÉTODO para editar 
     public function edit($id, $params)
     {
-        if (!isset($params["role_name"])) {
+        if (!isset($params["document_type_name"])) {
             return [
                 "result" => "Error",
                 "message" => "Todos los campos son requeridos"
             ];
         }
 
-        $edit = "UPDATE user_roles SET role_name = ? WHERE id_user_role = ?";
+        $edit = "UPDATE document_types SET document_type_name = ? WHERE id_document_type = ?";
         $stmt = $this->connection->prepare($edit);
 
         if ($stmt === false) {
@@ -108,7 +108,7 @@ class User_role
             ];
         }
 
-        $stmt->bind_param("si", $params["role_name"], $id);
+        $stmt->bind_param("si", $params["document_type_name"], $id);
         $result = $stmt->execute();
 
         if ($result === false) {
@@ -119,14 +119,14 @@ class User_role
         }
         return [
             "result" => "OK",
-            "message" => "El rol ha sido actualizado con éxito"
+            "message" => "Se ha actualiza el tipo de documentodo con éxito"
         ];
     }
 
     // Método para Filtrar 
     public function filter($value)
     {
-        $filter = "SELECT * FROM user_roles WHERE role_name LIKE '%$value%";
+        $filter = "SELECT * FROM document_types WHERE document_type_name LIKE '%$value%";
         $res = mysqli_query($this->connection, $filter);
         $result = [];
 
@@ -136,5 +136,7 @@ class User_role
         return $result;
 
     }
+
 }
+
 ?>

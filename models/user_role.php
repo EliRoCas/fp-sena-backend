@@ -22,6 +22,36 @@ class User_role
         return $role_name;
     }
 
+    // Método GET para consultar un rol por ID
+    public function getRoleById($id)
+    {
+        $getRole = "SELECT * FROM users WHERE id_user = ?";
+        $stmt = $this->connection->prepare($getRole);
+
+        if ($stmt === false) {
+            return [
+                "result" => "Error",
+                "message" => "Error al preparar la consulta: " . $this->connection->error
+            ];
+        }
+
+        // Se vincula el parámetro '$id' a la consulta
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $role = $res->fetch_assoc();
+
+        if (!$role) {
+            return [
+                "result" => "Error",
+                "message" => "Usuario no encontrado"
+            ];
+        }
+
+        return $role;
+    }
+
+
     // MÉTODO DELETE 
     public function delete($id)
     {

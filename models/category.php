@@ -42,6 +42,35 @@ class Category
         return $categories;
     }
 
+    // Método GET para consultar una categoría por ID
+    public function getCategoryById($id)
+    {
+        $getCategory = "SELECT * FROM users WHERE id_user = ?";
+        $stmt = $this->connection->prepare($getCategory);
+
+        if ($stmt === false) {
+            return [
+                "result" => "Error",
+                "message" => "Error al preparar la consulta: " . $this->connection->error
+            ];
+        }
+
+        // Se vincula el parámetro '$id' a la consulta
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $category = $res->fetch_assoc();
+
+        if (!$category) {
+            return [
+                "result" => "Error",
+                "message" => "Usuario no encontrado"
+            ];
+        }
+
+        return $category;
+    }
+
     // Método para agregar una nueva categoría
     public function addCategory($category_name)
     {

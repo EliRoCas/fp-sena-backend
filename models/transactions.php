@@ -9,11 +9,11 @@ class Transaction
     }
 
 
-    // MÉTODO GET para consultar todos los usuarios 
-    public function getTransaction()
+    // MÉTODO GET para consultar todas las transacciones
+    public function getTransactions()
     {
-        $getTransaction = "SELECT * FROM transactions ORDER BY transaction_date";
-        $res = mysqli_query($this->connection, $getTransaction);
+        $getTransactions = "SELECT * FROM transactions ORDER BY transaction_date";
+        $res = mysqli_query($this->connection, $getTransactions);
         $transactions = [];
 
         while ($row = mysqli_fetch_array($res)) {
@@ -22,11 +22,40 @@ class Transaction
         return $transactions;
     }
 
-    // MÉTODO DELETE 
-    public function delete($id)
+    // Método GET para consultar una transacción por ID
+    public function getTransactionById($id)
     {
-        $delete = "DELETE FROM transactions WHERE id_transaction = ?";
-        $stmt = $this->connection->prepare($delete);
+        $getTransaction = "SELECT * FROM transactions WHERE id_transaction = ?";
+        $stmt = $this->connection->prepare($getTransaction);
+
+        if ($stmt === false) {
+            return [
+                "result" => "Error",
+                "message" => "Error al preparar la consulta: " . $this->connection->error
+            ];
+        }
+
+        // Se vincula el parámetro '$id' a la consulta
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $transaction = $res->fetch_assoc();
+
+        if (!$transaction) {
+            return [
+                "result" => "Error",
+                "message" => "Transacción no encontrada"
+            ];
+        }
+
+        return $transaction;
+    }
+
+    // MÉTODO DELETE 
+    public function deleteTransaction($id)
+    {
+        $deleteTransaction = "DELETE FROM transactions WHERE id_transaction = ?";
+        $stmt = $this->connection->prepare($deleteTransaction);
 
         if ($stmt === false) {
             return [
@@ -52,20 +81,24 @@ class Transaction
     }
 
     // Método ADD 
-    public function add($params)
+    public function addTransaction($params)
     {
+        // Validación de campos obligatorios
         if (
-            !isset($params["transaction_name"]) || !isset($params["transaction_date"]) || !isset($params["transaction_amount"]) ||
-            !isset($params["transaction_type"]) || !isset($params["fo_category"])
+            !isset($params["transaction_name"]) || !isset($params["transaction_date"]) ||
+            !isset($params["transaction_amount"]) || !isset($params["transaction_type"]) ||
+            !isset($params["fo_category"])
         ) {
             return [
                 "result" => "Error",
-                "message" => "Todos los campos son requeridos"
+                "message" => "Los campos obligatorios son requeridos"
             ];
         }
 
-        $add = "INSERT INTO transactions (transaction_name, transaction_rose_export, transaction_rose_type, transaction_customer, transaction_date, transaction_amount, transaction_description, transaction_type, fo_category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        $stmt = $this->connection->prepare($add);
+        // Preparar la consulta SQL
+        $addTransaction = "INSERT INTO transactions (transaction_name, transaction_rose_export, transaction_rose_type, transaction_customer, transaction_date, transaction_amount, transaction_description, transaction_type, fo_category) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $stmt = $this->connection->prepare($addTransaction);
 
         if ($stmt === false) {
             return [
@@ -74,7 +107,19 @@ class Transaction
             ];
         }
 
-        $stmt->bind_param("ssssssssi", $params["transaction_name"], $params["transaction_rose_export"], $params["transaction_rose_type"], $params["transaction_customer"], $params["transaction_date"], $params["transaction_amount"], $params["transaction_description"], $params["transaction_type"], $params["fo_category"]);
+        // Bind de parámetros, manejando nulos con valores predeterminados
+        $stmt->bind_param(
+            "sssssdsss",
+            $params["transaction_name"],
+            $params["transaction_rose_export"] ?? null, // Permitir null
+            $params["transaction_rose_type"] ?? null, // Permitir null
+            $params["transaction_customer"] ?? null, // Permitir null
+            $params["transaction_date"],
+            $params["transaction_amount"],
+            $params["transaction_description"] ?? null, // Permitir null
+            $params["transaction_type"],
+            $params["fo_category"]
+        );
         $result = $stmt->execute();
 
         if ($result === false) {
@@ -91,7 +136,7 @@ class Transaction
     }
 
     // MÉTODO para editar 
-    public function edit($id, $params)
+    public function editTransaction($id, $params)
     {
         if (
             !isset($params["transaction_name"]) || !isset($params["transaction_date"]) || !isset($params["transaction_amount"]) ||
@@ -103,8 +148,17 @@ class Transaction
             ];
         }
 
-        $edit = "UPDATE transactions SET transaction_name = ?, transaction_rose_export = ?, transaction_rose_type = ?, transaction_customer = ?, transaction_date = ?, transaction_amount = ?, transaction_description = ?, transaction_type = ?, fo_category = ? WHERE id_transaction = ?";
-        $stmt = $this->connection->prepare($edit);
+        $editTransaction = "UPDATE transactions SET transaction_name = ?, 
+            transaction_rose_export = ?, 
+            transaction_rose_type = ?, 
+            transaction_customer = ?, 
+            transaction_date = ?, 
+            transaction_amount = ?, 
+            transaction_description = ?, 
+            transaction_type = ?, 
+            fo_category = ? 
+        WHERE id_transaction = ?";
+        $stmt = $this->connection->prepare($editTransaction);
 
         if ($stmt === false) {
             return [
@@ -131,7 +185,7 @@ class Transaction
     // MÉTODO FILTRAR
     public function filterTransaction($value)
     {
-        $filterTransaction = "SELECT * FROM document_types WHERE document_type_name LIKE '%$value%";
+        $filterTransaction = "SELECT * FROM transactions WHERE transaction_name LIKE '%$value%";
         $res = mysqli_query($this->connection, $filterTransaction);
         $result = [];
 

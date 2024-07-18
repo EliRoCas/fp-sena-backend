@@ -1,5 +1,5 @@
 <?php
-class Subcategory
+class Subsubcategory
 {
     // Atributo para almacenar la cadena de conexión
     public $connection;
@@ -13,11 +13,11 @@ class Subcategory
     // Método para consultar todas las subcategorías
     public function getAll()
     {
-        $getCategory = "SELECT * FROM subcategories ORDER BY subcategory_name";
+        $getSubsubcategory = "SELECT * FROM subcategories ORDER BY subsubcategory_name";
 
         //Se prepara la consulta con una conexión a la DB 
         //la variable $stmt es una instancia de la clase "mysqli_stmt" para sentencias SQL preparadas
-        $stmt = $this->connection->prepare($getCategory);
+        $stmt = $this->connection->prepare($getSubsubcategory);
 
         // Verificar si la preparación fue exitosa
         if ($stmt === false) {
@@ -42,12 +42,11 @@ class Subcategory
         return $subcategories;
     }
 
-    // Método para agregar una nueva categoría
-    public function addSubcategory($subcategory_name, $fo_category)
+    // Método GET para consultar una categoría por ID
+    public function getSubcategoryById($id)
     {
-        // Se define la consulta SQL para insertar una nueva categoría
-        $addSubcategory = "INSERT INTO subcategories (subcategory_name) VALUES (?)";
-        $stmt = $this->connection->prepare($addSubcategory);
+        $getSubcategory = "SELECT * FROM users WHERE id_user = ?";
+        $stmt = $this->connection->prepare($getSubcategory);
 
         if ($stmt === false) {
             return [
@@ -56,7 +55,38 @@ class Subcategory
             ];
         }
 
-        $stmt->bind_param("si", $subcategory_name, $fo_category);
+        // Se vincula el parámetro '$id' a la consulta
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $subcategory = $res->fetch_assoc();
+
+        if (!$subcategory) {
+            return [
+                "result" => "Error",
+                "message" => "Usuario no encontrado"
+            ];
+        }
+
+        return $subcategory;
+    }
+
+
+    // Método para agregar una nueva categoría
+    public function addSubsubcategory($subsubcategory_name, $fo_subcategory)
+    {
+        // Se define la consulta SQL para insertar una nueva categoría
+        $addSubsubcategory = "INSERT INTO subcategories (subsubcategory_name) VALUES (?)";
+        $stmt = $this->connection->prepare($addSubsubcategory);
+
+        if ($stmt === false) {
+            return [
+                "result" => "Error",
+                "message" => "Error al preparar la consulta: " . $this->connection->error
+            ];
+        }
+
+        $stmt->bind_param("si", $subsubcategory_name, $fo_subcategory);
         $result = $stmt->execute();
 
         if ($result === false) {
@@ -73,10 +103,10 @@ class Subcategory
     }
 
     // Método para editar una categoría existente
-    public function editSubcategory($id, $subcategory_name, $fo_category)
+    public function editSubsubcategory($id, $subsubcategory_name, $fo_subcategory)
     {
-        $editSubcategory = "UPDATE subcategories SET subcategory_name = ?, fo_category = ? WHERE id_subcategory = ?";
-        $stmt = $this->connection->prepare($editSubcategory);
+        $editSubsubcategory = "UPDATE subcategories SET subsubcategory_name = ?, fo_subcategory = ? WHERE id_subsubcategory = ?";
+        $stmt = $this->connection->prepare($editSubsubcategory);
 
         if ($stmt === false) {
             return [
@@ -85,7 +115,7 @@ class Subcategory
             ];
         }
 
-        $stmt->bind_param("sii", $subcategory_name, $fo_category, $id);
+        $stmt->bind_param("sii", $subsubcategory_name, $fo_subcategory, $id);
         $result = $stmt->execute();
 
         if ($result === false) {
@@ -102,10 +132,10 @@ class Subcategory
     }
 
     // Método para eliminar una categoría
-    public function deleteSubcategory($id)
+    public function deleteSubsubcategory($id)
     {
-        $deleteSubcategory = "DELETE FROM subcategories WHERE id_subcategory = ?";
-        $stmt = $this->connection->prepare($deleteSubcategory);
+        $deleteSubsubcategory = "DELETE FROM subcategories WHERE id_subsubcategory = ?";
+        $stmt = $this->connection->prepare($deleteSubsubcategory);
 
         // Verificar si la preparación fue exitosa
         if ($stmt === false) {
@@ -139,7 +169,7 @@ class Subcategory
     {
         // Se crea la consulta SQL para seleccionar todas las filas de la tabla donde el nombre contenga el
         // valor dado en '$value'. Se incluye (%) para indicar que cualquier dato puede estar antes o después del valor
-        $filter = "SELECT * FROM subcategories WHERE subcategory_name LIKE '%$value%";
+        $filter = "SELECT * FROM subcategories WHERE subsubcategory_name LIKE '%$value%";
         // Se ejecuta la consulta por medio de la cadena de conexión
         $res = mysqli_query($this->connection, $filter);
         $result = [];

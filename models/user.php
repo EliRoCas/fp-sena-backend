@@ -7,17 +7,68 @@ class User
         $this->connection = $connection;
     }
 
-    // MÉTODO GET para consultar todos los usuarios 
-    public function getUser()
+    // MÉTODO GET para consultar todos los usuarios con sus roles y tipos de documento
+    public function getUsers()
     {
-        $getUser = "SELECT * FROM users ORDER BY user_name";
-        $res = mysqli_query($this->connection, $getUser);
+        $getUsers = "SELECT 
+                users.id_user,
+                users.user_name,
+                users.user_lastname,
+                document_types.document_type_name,
+                users.document_number,
+                users.email,
+                user_roles.role_name
+        FROM  users
+        INNER JOIN document_types ON users.fo_document_type = document_types.id_document_type
+        LEFT JOIN user_roles_assignments ON users.id_user = user_roles_assignments.fo_user
+        LEFT JOIN user_roles ON user_roles_assignments.fo_user_role = user_roles.id_user_role
+         ORDER BY users.user_name; ";
+
+        $res = mysqli_query($this->connection, $getUsers);
         $users = [];
 
-        while ($row = mysqli_fetch_array($res)) {
+        while ($row = mysqli_fetch_assoc($res)) {
             $users[] = $row;
         }
+
         return $users;
+    }
+
+    // Método GET para consultar un usuario por ID
+    public function getUserById($id)
+    {
+        $getUser = "SELECT 
+                users.id_user,
+                users.user_name,
+                users.user_lastname,
+                document_types.document_type_name,
+                users.document_number,
+                users.email,
+                user_roles.role_name
+        FROM users
+        INNER JOIN document_types ON users.fo_document_type = document_types.id_document_type
+        LEFT JOIN  user_roles_assignments ON users.id_user = user_roles_assignments.fo_user
+        LEFT JOIN  user_roles ON user_roles_assignments.fo_user_role = user_roles.id_user_role
+         WHERE users.id_user = ?; ";
+
+        $stmt = $this->connection->prepare($getUser);
+        if ($stmt === false) {
+            return [
+                "result" => "Error",
+                "message" => "Error al preparar la consulta: " . $this->connection->error
+            ];
+        }
+
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+
+        if ($res->num_rows === 0) {
+            return null; // Si no se encuentra el usuario
+        }
+
+        $user = $res->fetch_assoc();
+        return $user;
     }
 
     // MÉTODO DELETE 
@@ -152,7 +203,7 @@ class User
     // MÉTODO FILTRAR
     public function filterUser($value)
     {
-        $filterUser = "SELECT * FROM document_types WHERE document_type_name LIKE '%$value%";
+        $filterUser = "SELECT * FROM users WHERE user_name LIKE '%$value%";
         $res = mysqli_query($this->connection, $filterUser);
         $result = [];
 

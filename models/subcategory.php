@@ -1,5 +1,5 @@
 <?php
-class Category
+class Subcategory
 {
     // Atributo para almacenar la cadena de conexión
     public $connection;
@@ -10,10 +10,10 @@ class Category
         $this->connection = $connection;
     }
 
-    // Método para consultar todas las categorías
+    // Método para consultar todas las subcategorías
     public function getAll()
     {
-        $getCategory = "SELECT * FROM categories ORDER BY category_name";
+        $getCategory = "SELECT * FROM subcategories ORDER BY subcategory_name";
 
         //Se prepara la consulta con una conexión a la DB 
         //la variable $stmt es una instancia de la clase "mysqli_stmt" para sentencias SQL preparadas
@@ -31,23 +31,23 @@ class Category
         // almacenar las categoráis obtenidas
         $stmt->execute();
         $res = $stmt->get_result();
-        $categories = [];
+        $subcategories = [];
 
-        // Se utiliza un bucle 'while' que recorre cada fila (row) del resultado y la agrega al arreglo '$categories',
+        // Se utiliza un bucle 'while' que recorre cada fila (row) del resultado y la agrega al arreglo '$subcategories',
         // utilizando el método 'fetch_assoc'
         while ($row = $res->fetch_assoc()) {
-            $categories[] = $row;
+            $subcategories[] = $row;
         }
 
-        return $categories;
+        return $subcategories;
     }
 
     // Método para agregar una nueva categoría
-    public function addCategory($category_name)
+    public function addSubcategory($subcategory_name, $fo_category)
     {
         // Se define la consulta SQL para insertar una nueva categoría
-        $addCategory = "INSERT INTO categories (category_name) VALUES (?)";
-        $stmt = $this->connection->prepare($addCategory);
+        $addSubcategory = "INSERT INTO subcategories (subcategory_name) VALUES (?)";
+        $stmt = $this->connection->prepare($addSubcategory);
 
         if ($stmt === false) {
             return [
@@ -56,7 +56,7 @@ class Category
             ];
         }
 
-        $stmt->bind_param("s", $category_name);
+        $stmt->bind_param("si", $subcategory_name, $fo_category);
         $result = $stmt->execute();
 
         if ($result === false) {
@@ -68,15 +68,15 @@ class Category
 
         return [
             "result" => "OK",
-            "message" => "Categoría agregada correctamente"
+            "message" => "Subcategoría agregada correctamente"
         ];
     }
 
     // Método para editar una categoría existente
-    public function editCategory($id, $category_name)
+    public function editSubcategory($id, $subcategory_name, $fo_category)
     {
-        $editCategory = "UPDATE categories SET category_name = ? WHERE id_category = ?";
-        $stmt = $this->connection->prepare($editCategory);
+        $editSubcategory = "UPDATE subcategories SET subcategory_name = ?, fo_category = ? WHERE id_subcategory = ?";
+        $stmt = $this->connection->prepare($editSubcategory);
 
         if ($stmt === false) {
             return [
@@ -85,7 +85,7 @@ class Category
             ];
         }
 
-        $stmt->bind_param("si", $category_name, $id);
+        $stmt->bind_param("sii", $subcategory_name, $fo_category, $id);
         $result = $stmt->execute();
 
         if ($result === false) {
@@ -97,15 +97,15 @@ class Category
 
         return [
             "result" => "OK",
-            "message" => "Categoría actualizada correctamente"
+            "message" => "Subcategoría actualizada correctamente"
         ];
     }
 
     // Método para eliminar una categoría
-    public function deleteCategory($id)
+    public function deleteSubcategory($id)
     {
-        $deleteCategory = "DELETE FROM categories WHERE id_category = ?";
-        $stmt = $this->connection->prepare($deleteCategory);
+        $deleteSubcategory = "DELETE FROM subcategories WHERE id_subcategory = ?";
+        $stmt = $this->connection->prepare($deleteSubcategory);
 
         // Verificar si la preparación fue exitosa
         if ($stmt === false) {
@@ -130,7 +130,7 @@ class Category
 
         return [
             "result" => "OK",
-            "message" => "Categoría eliminada correctamente"
+            "message" => "Subcategoría eliminada correctamente"
         ];
     }
 
@@ -139,7 +139,7 @@ class Category
     {
         // Se crea la consulta SQL para seleccionar todas las filas de la tabla donde el nombre contenga el
         // valor dado en '$value'. Se incluye (%) para indicar que cualquier dato puede estar antes o después del valor
-        $filter = "SELECT * FROM categories WHERE category_name LIKE '%$value%";
+        $filter = "SELECT * FROM subcategories WHERE subcategory_name LIKE '%$value%";
         // Se ejecuta la consulta por medio de la cadena de conexión
         $res = mysqli_query($this->connection, $filter);
         $result = [];
@@ -151,65 +151,3 @@ class Category
     }
 }
 ?>
-
-
-
-
-
-// Se decide usar métodos con sentencias preparadas, por cuestiones de seguridad y buenas prácticas
-// //Método para consultar todas las categorías ordenadas por nombre
-// public function consult()
-// {
-// // Consulta SQL para seleccionar todas las filas de la tabla 'category' ordenadas por 'category_name'
-// $consult = "SELECT * FROM category ORDER BY category_name";
-// // Ejecuta la consulta usando mysqli_query() con la conexión almacenada en $this->connection
-// $res = mysqli_query($this->connection, $consult);
-// //Array para almacenar todas las filas obtenidas en la consulta
-// $categories = [];
-
-// // Recorre cada fila del resultado y la agrega al arreglo $categories
-// while ($row = mysqli_fetch_array($res)) {
-// $categories[] = $row;
-// }
-
-// return $categories;
-// }
-
-// // Método para eliminar una categoría basada en su ID
-// public function deleteCategory($id)
-// {
-// // Consulta SQL para eliminar la categoría con el ID especificado
-// $del = "DELETE FROM category WHERE id_category = $id";
-// // Ejecuta la consulta de eliminación usando mysqli_query() con la conexión almacenada en $this->connection
-// mysqli_query($this->connection, $del);
-
-// // Array para almacenar el resultado y el mensaje de la operación de eliminación
-// $result = [];
-// $result['result'] = "Ok";
-// $result['message'] = "La categoría ha sido eliminada";
-
-// // Se devuelve el arreglo con el resultado y mensaje de la operación
-// return $result;
-// }
-
-// // Método para insertar una categoría
-// public function add($params)
-// {
-// $add = "INSERT INTO category(category_name) VALUES ('$params -> category_name')";
-// mysqli_query($this->connection, $add);
-// $result = [];
-// $result["result"] = "OK";
-// $result["message"] = "La categoría ha sido agregada";
-// return $result;
-// }
-
-// // Método para editar una categoría
-// public function editCategory($id, $params)
-// {
-// $editCategory = "UPDATE category SET category_name = '$params->category_name' WHERE id_category =id";
-// mysqli_query($this->connection, $editCategory);
-// $result = [];
-// $result["result"] = "OK";
-// $result["message"] = "La categoría ha sido editada con éxito";
-// return $result;
-// }

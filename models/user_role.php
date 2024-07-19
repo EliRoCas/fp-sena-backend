@@ -1,5 +1,5 @@
 <?php
-class User_role
+class UserRole
 {
     public $connection;
 
@@ -13,19 +13,19 @@ class User_role
     {
         $getAll = "SELECT * FROM user_roles ORDER BY role_name";
         $res = mysqli_query($this->connection, $getAll);
-        $role_name = [];
+        $roles = [];
 
-        while ($row = mysqli_fetch_array($res)) {
-            $role_name[] = $row;
+        while ($row = mysqli_fetch_assoc($res)) {
+            $roles[] = $row;
         }
 
-        return $role_name;
+        return $roles;
     }
 
     // Método GET para consultar un rol por ID
     public function getById($id)
     {
-        $getById = "SELECT * FROM users WHERE id_user = ?";
+        $getById = "SELECT * FROM user_roles WHERE id_user_role = ?";
         $stmt = $this->connection->prepare($getById);
 
         if ($stmt === false) {
@@ -44,7 +44,7 @@ class User_role
         if (!$role) {
             return [
                 "result" => "Error",
-                "message" => "Usuario no encontrado"
+                "message" => "Rol no encontrado"
             ];
         }
 
@@ -156,15 +156,35 @@ class User_role
     // Método para Filtrar 
     public function filter($value)
     {
-        $filter = "SELECT * FROM user_roles WHERE role_name LIKE '%$value%";
-        $res = mysqli_query($this->connection, $filter);
-        $result = [];
+        $filter = "SELECT * FROM user_roles WHERE role_name LIKE ?";
+        $stmt = $this->connection->prepare($filter);
 
-        while ($row = mysqli_fetch_array($res)) {
-            $result[] = $row;
+        if ($stmt === false) {
+            return [
+                'result' => 'Error',
+                'message' => 'Error al preparar la consulta: ' . $this->connection->error
+            ];
         }
-        return $result;
 
+        $value = "%$value%";
+        $stmt->bind_param("s", $value);
+        $stmt->execute();
+        $res = $stmt->get_result();
+
+        if ($res === false) {
+            return [
+                'result' => 'Error',
+                'message' => 'Error al ejecutar la consulta: ' . $stmt->error
+            ];
+        }
+
+        $roles = [];
+        while ($row = $res->fetch_assoc()) {
+            $roles[] = $row;
+        }
+
+        return $roles;
     }
+
 }
 ?>

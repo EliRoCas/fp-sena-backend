@@ -1,44 +1,58 @@
 <?php
-require '../db_connect.php';
-require '../models/user_role.php';
 
+//Se realiza la configuración para admitir solicitudes desde cualquier origen (diferentes dominios)
 header('Access-Control-Allow-Origin: *');
+// Se especifican los encabezados permitidos en las solicitudes HTTP. 
 header('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept');
+// Se establece el header "Content-Type" a "application/json" indicando que la respuesta es de tipo json
 header('Content-Type: application/json');
 
-$user_role = new User_role($connection);
+// Se inserta o requiere al archivo "connection.php" y el archivo "userRole.php" una sola vez de forma "obligatoria" 
+require_once '../db_connect.php';
+require_once '../models/user_role.php';
 
+// Se crea una nueva instancia de la clase "User_Role" del modelo, que lleva "connection" como argumento del constructor
+$userRole = new UserRole($connection);
+
+// Se utiliza, en lugar de la superglobal $_GET, que almacena los datos pasados como parámetro URL a la variable $control,
+// la superglobal $_SERVER que permite reconocer el tipo de la solicitud realizada por medio del método HTTP de la solicitud
 $requestMethod = $_SERVER['REQUEST_METHOD'];
-$endpoint = $_GET['endpoint'] ?? '';
+// Se obtiene el parámetro "controller" de la URL o un string vacío si no está, con el fin de determinar qué acción realizar
+$controller = $_GET['controller'] ?? '';
 
+// SE ejecuta la variable de control "switch" para validar las diferentes acciones (endpoints) que el controlador puede 
+// recibir a partir de cada solicitud HTTP. 
 switch ($requestMethod) {
+    // Se le da manejo al método "GET" por medio de la estructura de control "if...elseif", para validar qué respuesta 
+    // generar según cada controller. 
     case 'GET':
-        if ($endpoint === 'user_roles') {
-            $response = $user_role->getAll();
+        if ($controller === 'user_roles') {
+            $response = $userRole->getAll();
         } elseif (isset($_GET['id'])) {
             $id = $_GET['id'];
-            $response = $user_role->getById($id);
+            $response = $userRole->getById($id);
         } elseif (isset($_GET['filter'])) {
             $filter = $_GET['filter'];
-            $response = $user_role->filter($filter);
+            $response = $userRole->filter($filter);
         } else {
             $response = [
                 'result' => 'Error',
-                'message' => 'Invalid endpoint'
+                'message' => 'Invalid controller'
             ];
         }
         break;
 
     case 'POST':
         $input = json_decode(file_get_contents('php://input'), true);
-        $response = $user_role->post($input);
+        $response = $userRole->post($input);
         break;
 
-    case 'PUT':
+    case 'PATCH':
         $id = $_GET['id'] ?? null;
         $input = json_decode(file_get_contents('php://input'), true);
+        // SE añade una validación para verificar si el ID está presente antes de proceder a ejecutar la solicitud. 
         if ($id) {
-            $response = $user_role->patch($id, $input);
+            $response = $userRole->patch($id, $input);
         } else {
             $response = [
                 'result' => 'Error',
@@ -50,7 +64,7 @@ switch ($requestMethod) {
     case 'DELETE':
         $id = $_GET['id'] ?? null;
         if ($id) {
-            $response = $user_role->delete($id);
+            $response = $userRole->delete($id);
         } else {
             $response = [
                 'result' => 'Error',
@@ -59,6 +73,7 @@ switch ($requestMethod) {
         }
         break;
 
+    // Se genera un "default" para genera un código de error HTTP, en caso de no ser permitido o conocido el método HTTP
     default:
         http_response_code(405);
         $response = [
@@ -68,81 +83,6 @@ switch ($requestMethod) {
         break;
 }
 
+// Se envía la respuesta al cliente, luego de convertirla a formato JSON 
 echo json_encode($response);
 ?>
-
-
-
-
-
-<!-- 
-
-SE opta por utilizar un controlador más apegado a los principios de arquitectura RESTfull 
- 
-//Se realiza la configuración para admitir solicitudes desde cualquier origen (diferentes dominios)
-header('Access-Control-Allow-Origin: *');
-// Se especifican los encabezados permitidos en las solicitudes HTTP. 
-header('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept');
-
-// Se establece el header "Content-Type" a "application/json" indicando que la respuesta es de tipo json
-header('Content-Type: application/json');
-
-// Se inserta o requiere al archivo "connection.php" y el archivo "user_role.php" una sola vez de forma "obligatoria" 
-require_once ("../db_connect.php");
-require_once ("../models/user_role.php");
-
-//Se establece la superglobal $_GET, para asignar el valor que se pasa como parámetro URL a la variable $control
-$control = $_GET['control'];
-
-// Se crea una nueva instancia de la clase "User_Role" del modelo, que lleva "connection" como argumento del constructor
-$user_role = new User_Role($connection);
-
-// Se ejecuta la estructura de control "switch" para validar los posibles casos de la variable "$control"
-switch ($control) {
-    // primero comprueba si $control es igual getAll (case) y, si lo es, llama al método getAll del objeto del modelo, 
-    // asignando su resultado a la variable $us_role 
-    case 'getAll':
-        $us_role = $user_role->getAll();
-        break;
-    case 'getById':
-        $id = $_GET['id'];
-        $us_role = $user_role->getById($id);
-        break;
-    case 'post':
-        // $json = '[{"nombre": "prueba"}]'; Linea de prueba
-        $json = file_get_contents('php://input');
-        $params = json_decode($json, true);
-        $us_role = $user_role->post($params);
-        break;
-    case 'delete':
-        $id = $_GET['id'];
-        $us_role = $user_role->delete($id);
-        break;
-    case 'patch':
-        $json = '{"id": 1, "nombre": "prueba"}';
-        // $json = file_get_contents('php://input');
-        $params = json_decode($json, true);
-
-        // Se realiza un método de verificación del parámetro "id" en el $_GET
-        if (!isset($_GET['id'])) {
-            echo json_encode([
-                'result' => 'Error',
-                'message' => 'El ID es requerido'
-            ]);
-            exit;
-        }
-
-        $id = $_GET['id'];
-        $us_role = $user_role->patch($id, $params);
-        break;
-    case 'filter':
-        $data = $_GET['data'];
-        $value = $user_role->filter($data);
-
-
-}
-
-// Pasada la verificación, se codifica la variable "$us_role" a formato json y se la asigna a "$data_role"
-$data_role = json_encode($us_role);
-// Se imprime la respuesta json al cliente  
-echo $data_role; -->

@@ -9,7 +9,7 @@ class UserRoleAssignment
     }
 
     // Método para asignar un rol a un usuario
-    public function assignUserRole($userId, $roleId)
+    public function assignUserRole($id_user, $roleId)
     {
         $assign = "INSERT INTO user_roles_assignments (fo_user, fo_user_role) VALUES (?, ?)";
         $stmt = $this->connection->prepare($assign);
@@ -21,7 +21,7 @@ class UserRoleAssignment
             ];
         }
 
-        $stmt->bind_param("ii", $userId, $roleId);
+        $stmt->bind_param("ii", $id_user, $roleId);
         $result = $stmt->execute();
 
         if ($result === false) {
@@ -38,7 +38,7 @@ class UserRoleAssignment
     }
 
     // Método para consultar los roles de un usuario
-    public function getUserRoles($userId)
+    public function getUserRoles($id_user)
     {
         $consult = "SELECT ur.* FROM user_roles ur
                     INNER JOIN user_roles_assignments ura ON ur.id_user_role = ura.fo_user_role
@@ -52,7 +52,7 @@ class UserRoleAssignment
             ];
         }
 
-        $stmt->bind_param("i", $userId);
+        $stmt->bind_param("i", $id_user);
         $stmt->execute();
         $res = $stmt->get_result();
         $userRoles = [];
@@ -65,7 +65,7 @@ class UserRoleAssignment
     }
 
     // Método para eliminar un rol asignado a un usuario
-    public function unassignUserRole($userId, $roleId)
+    public function unassignUserRole($id_user, $roleId)
     {
         $delete = "DELETE FROM user_roles_assignments WHERE fo_user = ? AND fo_user_role = ?";
         $stmt = $this->connection->prepare($delete);
@@ -77,7 +77,7 @@ class UserRoleAssignment
             ];
         }
 
-        $stmt->bind_param("ii", $userId, $roleId);
+        $stmt->bind_param("ii", $id_user, $roleId);
         $result = $stmt->execute();
 
         if ($result === false) {

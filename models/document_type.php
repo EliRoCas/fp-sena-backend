@@ -9,17 +9,45 @@ class DocumentType
     }
 
     //MÉTODO GET para consultar todos los tipos de documentos 
-    public function getDocumentType()
+    public function getAll()
     {
-        $getDocumentType = "SELECT * FROM document_types ORDER BY document_type_name";
-        $res = mysqli_query($this->connection, $getDocumentType);
-        $document_type_name = [];
+        $getAll = "SELECT * FROM document_types ORDER BY document_type_name";
+        $res = mysqli_query($this->connection, $getAll);
+        $d_types = [];
 
-        while ($row = mysqli_fetch_array($res)) {
-            $document_type_name[] = $row;
+        while ($row = mysqli_fetch_assoc($res)) {
+            $d_types[] = $row;
         }
 
-        return $document_type_name;
+        return $d_types;
+    }
+
+    // MÉTODO GET para consultar tipos de documentos por ID
+    public function getById($id)
+    {
+        $getById = "SELECT * FROM document_types WHERE id_document_type = ? ";
+        $stmt = $this->connection->prepare($getById);
+
+        if ($stmt === false) {
+            return [
+                "result" => "Error",
+                "message" => "Error al preparar la consula: " . $this->connection->error
+            ];
+        }
+
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $d_types = $res->fetch_assoc();
+
+        if (!$d_types) {
+            return [
+                "result" => "Error",
+                "message" => "Tipo de documento no encontrado"
+            ];
+        }
+
+        return $d_types;
     }
 
     //MÉTODO DELETE 
@@ -53,7 +81,7 @@ class DocumentType
     }
 
     // Método ADD 
-    public function add($params)
+    public function post($params)
     {
         if (!isset($params["document_type_name"])) {
             return [
@@ -62,8 +90,8 @@ class DocumentType
             ];
         }
 
-        $add = "INSERT INTO document_types (document_type_name) VALUES (?)";
-        $stmt = $this->connection->prepare($add);
+        $post = "INSERT INTO document_types (document_type_name) VALUES (?)";
+        $stmt = $this->connection->prepare($post);
 
         if ($stmt === false) {
             return [
@@ -89,7 +117,7 @@ class DocumentType
     }
 
     // MÉTODO para editar 
-    public function edit($id, $params)
+    public function patch($id, $params)
     {
         if (!isset($params["document_type_name"])) {
             return [
@@ -98,8 +126,8 @@ class DocumentType
             ];
         }
 
-        $edit = "UPDATE document_types SET document_type_name = ? WHERE id_document_type = ?";
-        $stmt = $this->connection->prepare($edit);
+        $patch = "UPDATE document_types SET document_type_name = ? WHERE id_document_type = ?";
+        $stmt = $this->connection->prepare($patch);
 
         if ($stmt === false) {
             return [
@@ -126,15 +154,34 @@ class DocumentType
     // Método para Filtrar 
     public function filter($value)
     {
-        $filter = "SELECT * FROM document_types WHERE document_type_name LIKE '%$value%";
-        $res = mysqli_query($this->connection, $filter);
-        $result = [];
+        $filter = "SELECT * FROM document_types WHERE document_type_name LIKE ?";
+        $stmt = $this->connection->prepare($filter);
 
-        while ($row = mysqli_fetch_array($res)) {
-            $result[] = $row;
+        if ($stmt === false) {
+            return [
+                'result' => 'Error',
+                'message' => 'Error al preparar la consulta: ' . $this->connection->error
+            ];
         }
-        return $result;
 
+        $value = "%$value%";
+        $stmt->bind_param("s", $value);
+        $stmt->execute();
+        $res = $stmt->get_result();
+
+        if ($res === false) {
+            return [
+                'result' => 'Error',
+                'message' => 'Error al ejecutar la consulta: ' . $stmt->error
+            ];
+        }
+
+        $d_types = [];
+        while ($row = $res->fetch_assoc()) {
+            $d_types[] = $row;
+        }
+
+        return $d_types;
     }
 
 }

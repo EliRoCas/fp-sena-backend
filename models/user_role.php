@@ -9,10 +9,10 @@ class User_role
     }
 
     //MÉTODO GET para consultar todos los roles 
-    public function getRol()
+    public function getAll()
     {
-        $getRol = "SELECT * FROM user_roles ORDER BY role_name";
-        $res = mysqli_query($this->connection, $getRol);
+        $getAll = "SELECT * FROM user_roles ORDER BY role_name";
+        $res = mysqli_query($this->connection, $getAll);
         $role_name = [];
 
         while ($row = mysqli_fetch_array($res)) {
@@ -23,10 +23,10 @@ class User_role
     }
 
     // Método GET para consultar un rol por ID
-    public function getRoleById($id)
+    public function getById($id)
     {
-        $getRole = "SELECT * FROM users WHERE id_user = ?";
-        $stmt = $this->connection->prepare($getRole);
+        $getById = "SELECT * FROM users WHERE id_user = ?";
+        $stmt = $this->connection->prepare($getById);
 
         if ($stmt === false) {
             return [
@@ -83,7 +83,7 @@ class User_role
     }
 
     // Método ADD 
-    public function add($params)
+    public function post($params)
     {
         if (!isset($params["role_name"])) {
             return [
@@ -92,8 +92,8 @@ class User_role
             ];
         }
 
-        $add = "INSERT INTO user_roles (role_name) VALUES (?)";
-        $stmt = $this->connection->prepare($add);
+        $post = "INSERT INTO user_roles (role_name) VALUES (?)";
+        $stmt = $this->connection->prepare($post);
 
         if ($stmt === false) {
             return [
@@ -119,7 +119,7 @@ class User_role
     }
 
     // MÉTODO para editar 
-    public function edit($id, $params)
+    public function patch($id, $params)
     {
         if (!isset($params["role_name"])) {
             return [
@@ -128,8 +128,8 @@ class User_role
             ];
         }
 
-        $edit = "UPDATE user_roles SET role_name = ? WHERE id_user_role = ?";
-        $stmt = $this->connection->prepare($edit);
+        $patch = "UPDATE user_roles SET role_name = ? WHERE id_user_role = ?";
+        $stmt = $this->connection->prepare($patch);
 
         if ($stmt === false) {
             return [

@@ -241,7 +241,7 @@ class Category
 
 
 
-
+<!-- 
 // Se decide usar métodos con sentencias preparadas, por cuestiones de seguridad y buenas prácticas
 // //Método para consultar todas las categorías ordenadas por nombre
 // public function consult()
@@ -298,4 +298,4 @@ class Category
 // $result["result"] = "OK";
 // $result["message"] = "La categoría ha sido editada con éxito";
 // return $result;
-// }
+// } -->

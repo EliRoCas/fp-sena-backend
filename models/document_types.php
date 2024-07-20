@@ -81,7 +81,7 @@ class DocumentType
     }
 
     // Método ADD 
-    public function post($params)
+    public function add($params)
     {
         if (!isset($params["document_type_name"])) {
             return [
@@ -117,7 +117,7 @@ class DocumentType
     }
 
     // MÉTODO para editar 
-    public function patch($id, $params)
+    public function update($id, $params)
     {
         if (!isset($params["document_type_name"])) {
             return [
@@ -152,7 +152,7 @@ class DocumentType
     }
 
     // Método para Filtrar 
-    public function filter($value)
+    public function getByName($value)
     {
         $filter = "SELECT * FROM document_types WHERE document_type_name LIKE ?";
         $stmt = $this->connection->prepare($filter);

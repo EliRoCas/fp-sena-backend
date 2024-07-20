@@ -11,11 +11,11 @@ class UserRole
     //MÉTODO GET para consultar todos los roles 
     public function getAll()
     {
-        $getAll = "SELECT * FROM user_roles ORDER BY role_name";
-        $res = mysqli_query($this->connection, $getAll);
+        $getAllSql = "SELECT * FROM user_roles ORDER BY role_name";
+        $response = mysqli_query($this->connection, $getAllSql);
         $roles = [];
 
-        while ($row = mysqli_fetch_assoc($res)) {
+        while ($row = mysqli_fetch_assoc($response)) {
             $roles[] = $row;
         }
 
@@ -25,8 +25,8 @@ class UserRole
     // Método GET para consultar un rol por ID
     public function getById($id)
     {
-        $getById = "SELECT * FROM user_roles WHERE id_user_role = ?";
-        $stmt = $this->connection->prepare($getById);
+        $getByIdSql = "SELECT * FROM user_roles WHERE id_user_role = ?";
+        $stmt = $this->connection->prepare($getByIdSql);
 
         if ($stmt === false) {
             return [
@@ -38,8 +38,8 @@ class UserRole
         // Se vincula el parámetro '$id' a la consulta
         $stmt->bind_param("i", $id);
         $stmt->execute();
-        $res = $stmt->get_result();
-        $role = $res->fetch_assoc();
+        $response = $stmt->get_result();
+        $role = $response->fetch_assoc();
 
         if (!$role) {
             return [
@@ -55,8 +55,8 @@ class UserRole
     // MÉTODO DELETE 
     public function delete($id)
     {
-        $delete = "DELETE FROM user_roles WHERE id_user_role = ?";
-        $stmt = $this->connection->prepare($delete);
+        $deleteSql = "DELETE FROM user_roles WHERE id_user_role = ?";
+        $stmt = $this->connection->prepare($deleteSql);
 
         if ($stmt === false) {
             return [
@@ -83,7 +83,7 @@ class UserRole
     }
 
     // Método ADD 
-    public function post($params)
+    public function add($params)
     {
         if (!isset($params["role_name"])) {
             return [
@@ -92,8 +92,8 @@ class UserRole
             ];
         }
 
-        $post = "INSERT INTO user_roles (role_name) VALUES (?)";
-        $stmt = $this->connection->prepare($post);
+        $insertSql = "INSERT INTO user_roles (role_name) VALUES (?)";
+        $stmt = $this->connection->prepare($insertSql);
 
         if ($stmt === false) {
             return [
@@ -119,7 +119,7 @@ class UserRole
     }
 
     // MÉTODO para editar 
-    public function patch($id, $params)
+    public function update($id, $params)
     {
         if (!isset($params["role_name"])) {
             return [
@@ -128,8 +128,8 @@ class UserRole
             ];
         }
 
-        $patch = "UPDATE user_roles SET role_name = ? WHERE id_user_role = ?";
-        $stmt = $this->connection->prepare($patch);
+        $updateSql = "UPDATE user_roles SET role_name = ? WHERE id_user_role = ?";
+        $stmt = $this->connection->prepare($updateSql);
 
         if ($stmt === false) {
             return [
@@ -154,10 +154,10 @@ class UserRole
     }
 
     // Método para Filtrar 
-    public function filter($value)
+    public function getByName($value)
     {
-        $filter = "SELECT * FROM user_roles WHERE role_name LIKE ?";
-        $stmt = $this->connection->prepare($filter);
+        $filterByNameSql = "SELECT * FROM user_roles WHERE role_name LIKE ?";
+        $stmt = $this->connection->prepare($filterByNameSql);
 
         if ($stmt === false) {
             return [
@@ -169,9 +169,9 @@ class UserRole
         $value = "%$value%";
         $stmt->bind_param("s", $value);
         $stmt->execute();
-        $res = $stmt->get_result();
+        $response = $stmt->get_result();
 
-        if ($res === false) {
+        if ($response === false) {
             return [
                 'result' => 'Error',
                 'message' => 'Error al ejecutar la consulta: ' . $stmt->error
@@ -179,7 +179,7 @@ class UserRole
         }
 
         $roles = [];
-        while ($row = $res->fetch_assoc()) {
+        while ($row = $response->fetch_assoc()) {
             $roles[] = $row;
         }
 

@@ -26,25 +26,20 @@ switch ($requestMethod) {
     // Se le da manejo al método "GET" por medio de la estructura de control "if...elseif", para validar qué respuesta 
     // generar según cada controller. 
     case 'GET':
-        if ($controller === 'user_roles') {
-            $response = $userRole->getAll();
-        } elseif (isset($_GET['id'])) {
+        if (isset($_GET['id'])) {
             $id = $_GET['id'];
             $response = $userRole->getById($id);
         } elseif (isset($_GET['filter'])) {
             $filter = $_GET['filter'];
-            $response = $userRole->filter($filter);
+            $response = $userRole->getByName($filter);
         } else {
-            $response = [
-                'result' => 'Error',
-                'message' => 'Invalid controller'
-            ];
+            $response = $userRole->getAll();
         }
         break;
 
     case 'POST':
         $input = json_decode(file_get_contents('php://input'), true);
-        $response = $userRole->post($input);
+        $response = $userRole->add($input);
         break;
 
     case 'PATCH':
@@ -52,7 +47,7 @@ switch ($requestMethod) {
         $input = json_decode(file_get_contents('php://input'), true);
         // SE añade una validación para verificar si el ID está presente antes de proceder a ejecutar la solicitud. 
         if ($id) {
-            $response = $userRole->patch($id, $input);
+            $response = $userRole->update($id, $input);
         } else {
             $response = [
                 'result' => 'Error',

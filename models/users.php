@@ -12,7 +12,7 @@ class Users
     {
         //Se establece la consulta utilizando inner join y left join para asegurar todos los campos requeridos. 
         // Además, se utiliza el 'GROUP_CONCAT' para combinar todos los roles asociados a un usuario en una sola col. 
-        $getAll = "SELECT u.*, doc.document_type_name, GROUP_CONCAT(uRol.role_name SEPARATOR ', ') AS roles
+        $getAllSql = "SELECT u.*, doc.document_type_name, GROUP_CONCAT(uRol.role_name SEPARATOR ', ') AS roles
             FROM users u
             INNER JOIN document_types doc ON u.fo_document_type = doc.id_document_type
             LEFT JOIN user_roles_assignments uRolAss ON u.id_user = uRolAss.fo_user
@@ -20,10 +20,10 @@ class Users
             GROUP BY u.id_user
             ORDER BY u.user_name";
 
-        $res = mysqli_query($this->connection, $getAll);
+        $response = mysqli_query($this->connection, $getAllSql);
         $users = [];
 
-        while ($row = mysqli_fetch_assoc($res)) {
+        while ($row = mysqli_fetch_assoc($response)) {
             $users[] = $row;
         }
 
@@ -33,7 +33,7 @@ class Users
     // Método GET para consultar un usuario por ID
     public function getById($id)
     {
-        $getById = "SELECT u.*, doc.document_type_name, GROUP_CONCAT(uRol.role_name SEPARATOR ', ') AS roles
+        $getByIdSql = "SELECT u.*, doc.document_type_name, GROUP_CONCAT(uRol.role_name SEPARATOR ', ') AS roles
             FROM users u
             INNER JOIN document_types doc ON u.fo_document_type = doc.id_document_type
             LEFT JOIN user_roles_assignments uRolAss ON u.id_user = uRolAss.fo_user
@@ -41,7 +41,7 @@ class Users
             WHERE u.id_user = ?
             GROUP BY u.id_user";
 
-        $stmt = $this->connection->prepare($getById);
+        $stmt = $this->connection->prepare($getByIdSql);
         if ($stmt === false) {
             return [
                 "result" => "Error",
@@ -69,8 +69,8 @@ class Users
     // MÉTODO DELETE 
     public function delete($id)
     {
-        $delete = "DELETE FROM users WHERE  id_user = ?";
-        $stmt = $this->connection->prepare($delete);
+        $deleteSql = "DELETE FROM users WHERE  id_user = ?";
+        $stmt = $this->connection->prepare($deleteSql);
 
         if ($stmt === false) {
             return [
@@ -90,13 +90,13 @@ class Users
 
         return [
             "result" => "Ok",
-            "message" => "El usuario ha sido elimianado",
+            "message" => "El usuario ha sido eliminado",
         ];
     }
 
 
     // MÉTODO ADD
-    public function post($params)
+    public function add($params)
     {
         if (
             !isset($params["user_name"]) || !isset($params["user_lastname"]) || !isset($params["fo_document_type"]) ||
@@ -107,7 +107,7 @@ class Users
                 "message" => "Todos los campos son requeridos" . $this->connection->error,
             ];
         }
-        $post = "INSERT INTO users (
+        $insertSql = "INSERT INTO users (
         user_name, 
         user_lastname, 
         fo_document_type, 
@@ -115,7 +115,7 @@ class Users
         email, 
         password) 
         VALUES (?, ?, ?, ?, ?, ?)";
-        $stmt = $this->connection->prepare($post);
+        $stmt = $this->connection->prepare($insertSql);
 
         if ($stmt === false) {
             return [
@@ -143,12 +143,12 @@ class Users
         }
         return [
             "result" => "Ok",
-            "message" => "El usuario a sido agregado con éxito",
+            "message" => "El usuario ha sido agregado con éxito",
         ];
     }
 
     // MÉTODO EDIT 
-    public function patch($id, $params)
+    public function update($id, $params)
     {
         if (
             !isset($params["user_name"]) || !isset($params["user_lastname"]) || !isset($params["fo_document_type"])
@@ -160,9 +160,9 @@ class Users
             ];
         }
 
-        $patch = "UPDATE users SET user_name = ?, user_lastname = ?, fo_document_type = ?, document_number = ?,
+        $updatSql = "UPDATE users SET user_name = ?, user_lastname = ?, fo_document_type = ?, document_number = ?,
          email = ?, password = ? WHERE id_user = ?";
-        $stmt = $this->connection->prepare($patch);
+        $stmt = $this->connection->prepare($updatSql);
 
         if ($stmt === false) {
             return [
@@ -196,9 +196,9 @@ class Users
     }
 
     // MÉTODO FILTRAR
-    public function filter($value)
+    public function filterByName($value)
     {
-        $filter = "SELECT u.*, doc.document_type_name, GROUP_CONCAT(uRol.role_name SEPARATOR ', ') AS roles
+        $filterSql = "SELECT u.*, doc.document_type_name, GROUP_CONCAT(uRol.role_name SEPARATOR ', ') AS roles
             FROM users u
             INNER JOIN document_types doc ON u.fo_document_type = doc.id_document_type
             LEFT JOIN user_roles_assignments uRolAss ON u.id_user = uRolAss.fo_user
@@ -206,7 +206,7 @@ class Users
             WHERE u.user_name LIKE ?
             GROUP BY u.id_user";
 
-        $stmt = $this->connection->prepare($filter);
+        $stmt = $this->connection->prepare($filterSql);
         if ($stmt === false) {
             return [
                 "result" => "Error",
@@ -218,10 +218,10 @@ class Users
         $likeValue = "%$value%";
         $stmt->bind_param("s", $likeValue);
         $stmt->execute();
-        $res = $stmt->get_result();
+        $response = $stmt->get_result();
 
         $users = [];
-        while ($row = $res->fetch_assoc()) {
+        while ($row = $response->fetch_assoc()) {
             $users[] = $row;
         }
 

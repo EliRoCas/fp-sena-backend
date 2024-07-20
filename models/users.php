@@ -1,5 +1,5 @@
 <?php
-class User
+class Users
 {
     public $connection;
     public function __construct($connection)
@@ -8,11 +8,11 @@ class User
     }
 
     // MÉTODO GET para consultar todos los usuarios con sus roles y tipos de documento
-    public function getUsers()
+    public function getAll()
     {
         //Se establece la consulta utilizando inner join y left join para asegurar todos los campos requeridos. 
         // Además, se utiliza el 'GROUP_CONCAT' para combinar todos los roles asociados a un usuario en una sola col. 
-        $getUsers = "SELECT u.*, doc.document_type_name, GROUP_CONCAT(uRol.role_name SEPARATOR ', ') AS roles
+        $getAll = "SELECT u.*, doc.document_type_name, GROUP_CONCAT(uRol.role_name SEPARATOR ', ') AS roles
             FROM users u
             INNER JOIN document_types doc ON u.fo_document_type = doc.id_document_type
             LEFT JOIN user_roles_assignments uRolAss ON u.id_user = uRolAss.fo_user
@@ -20,7 +20,7 @@ class User
             GROUP BY u.id_user
             ORDER BY u.user_name";
 
-        $res = mysqli_query($this->connection, $getUsers);
+        $res = mysqli_query($this->connection, $getAll);
         $users = [];
 
         while ($row = mysqli_fetch_assoc($res)) {
@@ -31,9 +31,9 @@ class User
     }
 
     // Método GET para consultar un usuario por ID
-    public function getUserById($id)
+    public function getById($id)
     {
-        $getUser = "SELECT u.*, doc.document_type_name, GROUP_CONCAT(uRol.role_name SEPARATOR ', ') AS roles
+        $getById = "SELECT u.*, doc.document_type_name, GROUP_CONCAT(uRol.role_name SEPARATOR ', ') AS roles
             FROM users u
             INNER JOIN document_types doc ON u.fo_document_type = doc.id_document_type
             LEFT JOIN user_roles_assignments uRolAss ON u.id_user = uRolAss.fo_user
@@ -41,7 +41,7 @@ class User
             WHERE u.id_user = ?
             GROUP BY u.id_user";
 
-        $stmt = $this->connection->prepare($getUser);
+        $stmt = $this->connection->prepare($getById);
         if ($stmt === false) {
             return [
                 "result" => "Error",
@@ -67,10 +67,10 @@ class User
     }
 
     // MÉTODO DELETE 
-    public function deleteUser($id)
+    public function delete($id)
     {
-        $deleteUser = "DELETE FROM users WHERE  id_user = ?";
-        $stmt = $this->connection->prepare($deleteUser);
+        $delete = "DELETE FROM users WHERE  id_user = ?";
+        $stmt = $this->connection->prepare($delete);
 
         if ($stmt === false) {
             return [
@@ -96,7 +96,7 @@ class User
 
 
     // MÉTODO ADD
-    public function addUser($params)
+    public function post($params)
     {
         if (
             !isset($params["user_name"]) || !isset($params["user_lastname"]) || !isset($params["fo_document_type"]) ||
@@ -107,7 +107,7 @@ class User
                 "message" => "Todos los campos son requeridos" . $this->connection->error,
             ];
         }
-        $addUser = "INSERT INTO users (
+        $post = "INSERT INTO users (
         user_name, 
         user_lastname, 
         fo_document_type, 
@@ -115,7 +115,7 @@ class User
         email, 
         password) 
         VALUES (?, ?, ?, ?, ?, ?)";
-        $stmt = $this->connection->prepare($addUser);
+        $stmt = $this->connection->prepare($post);
 
         if ($stmt === false) {
             return [
@@ -147,8 +147,8 @@ class User
         ];
     }
 
-    // MÉTODO EDIT (update)
-    public function editUser($id, $params)
+    // MÉTODO EDIT 
+    public function patch($id, $params)
     {
         if (
             !isset($params["user_name"]) || !isset($params["user_lastname"]) || !isset($params["fo_document_type"])
@@ -160,9 +160,9 @@ class User
             ];
         }
 
-        $editUser = "UPDATE users SET user_name = ?, user_lastname = ?, fo_document_type = ?, document_number = ?,
+        $patch = "UPDATE users SET user_name = ?, user_lastname = ?, fo_document_type = ?, document_number = ?,
          email = ?, password = ? WHERE id_user = ?";
-        $stmt = $this->connection->prepare($editUser);
+        $stmt = $this->connection->prepare($patch);
 
         if ($stmt === false) {
             return [
@@ -196,9 +196,9 @@ class User
     }
 
     // MÉTODO FILTRAR
-    public function filterUser($value)
+    public function filter($value)
     {
-        $filterUser = "SELECT u.*, doc.document_type_name, GROUP_CONCAT(uRol.role_name SEPARATOR ', ') AS roles
+        $filter = "SELECT u.*, doc.document_type_name, GROUP_CONCAT(uRol.role_name SEPARATOR ', ') AS roles
             FROM users u
             INNER JOIN document_types doc ON u.fo_document_type = doc.id_document_type
             LEFT JOIN user_roles_assignments uRolAss ON u.id_user = uRolAss.fo_user
@@ -206,7 +206,7 @@ class User
             WHERE u.user_name LIKE ?
             GROUP BY u.id_user";
 
-        $stmt = $this->connection->prepare($filterUser);
+        $stmt = $this->connection->prepare($filter);
         if ($stmt === false) {
             return [
                 "result" => "Error",

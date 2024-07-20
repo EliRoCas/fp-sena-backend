@@ -9,7 +9,7 @@ header('Content-Type: application/json');
 
 // Se inserta o requiere al archivo "connection.php" y el archivo "userRole.php" una sola vez de forma "obligatoria" 
 require_once '../db_connect.php';
-require_once '../models/user_role.php';
+require_once '../models/user_roles.php';
 
 // Se crea una nueva instancia de la clase "User_Role" del modelo, que lleva "connection" como argumento del constructor
 $userRole = new UserRole($connection);

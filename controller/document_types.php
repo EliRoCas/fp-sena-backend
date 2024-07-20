@@ -5,7 +5,7 @@ header('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Ac
 header('Content-Type: application/json');
 
 require_once '../db_connect.php';
-require_once '../models/document_type.php';
+require_once '../models/document_types.php';
 
 $documentType = new DocumentType($connection);
 

@@ -11,27 +11,24 @@ class Category
     }
 
     // Método para consultar todas las categorías con sus subcategorías
-    public function getCategories()
+    public function getAll()
     {
         // Se ejecuta la consulta SQL con el método left join para asegurar que se obtengan los resultados de las 
         // categorías con y sin subcategorías. 
-        $getCategories = "SELECT cat.*, sub.id_subcategory, sub.subcategory_name AS subcategory_name
-            FROM 
-                categories cat
-            LEFT JOIN 
-                subcategories sub ON cat.id_category = sub.fo_category
-            ORDER BY 
-                cat.category_name, sub.subcategory_name
+        $getAllSql = "SELECT cat.*, sub.id_subcategory, sub.subcategory_name AS subcategory_name
+            FROM categories cat
+            LEFT JOIN  subcategories sub ON cat.id_category = sub.fo_category
+            ORDER BY cat.category_name, sub.subcategory_name
         ";
 
         // Se envía y ejecuta la consulta por medio de la función "mysqli_query" y se determina la conexión
         // Además, se inicializa un array vacío que contendrá los datos de la iteración del bucle while. 
-        $res = mysqli_query($this->connection, $getCategories);
+        $response = mysqli_query($this->connection, $getAllSql);
         $categories = [];
 
         // Se obtiene una fila de datos "mysqli...ASSOC)" con el resultado de la iteración, en donde row contendrá 
         // los nombre de columna como claves del array. 
-        while ($row = mysqli_fetch_array($res, MYSQLI_ASSOC)) {
+        while ($row = mysqli_fetch_array($response, MYSQLI_ASSOC)) {
             //Se identifica la categoría actual por su id, para organizar el array 
             $categoryId = $row['id_category'];
             // Se verifica el si el objeto con el "id_category" identifica se encuentra o no en el array para continuar 
@@ -58,16 +55,16 @@ class Category
 
 
     // MÉTODO GET para consultar una categoría por ID con sus subcategorías
-    public function getCategoryById($id)
+    public function getById($id)
     {
-        $getCategory = "SELECT cat * sub.id_subcategory, sub.subcategory_name AS subcategory_name
+        $getByIdSql = "SELECT cat.*, sub.id_subcategory, sub.subcategory_name AS subcategory_name
            FROM categories cat
            LEFT JOIN subcategories sub ON cat.id_category = sub.fo_category
            WHERE cat.id_category = ?
            ORDER BY sub.subcategory_name;
        ";
 
-        $stmt = $this->connection->prepare($getCategory);
+        $stmt = $this->connection->prepare($getByIdSql);
         if ($stmt === false) {
             return [
                 "result" => "Error",
@@ -77,10 +74,10 @@ class Category
 
         $stmt->bind_param("i", $id);
         $stmt->execute();
-        $res = $stmt->get_result();
+        $response = $stmt->get_result();
 
         $category = null;
-        while ($row = $res->fetch_assoc()) {
+        while ($row = $response->fetch_assoc()) {
             if ($category === null) {
                 $category = [
                     'id_category' => $row['id_category'],
@@ -99,11 +96,11 @@ class Category
     }
 
     // Método para agregar una nueva categoría
-    public function addCategory($category_name)
+    public function add($params)
     {
         // Se define la consulta SQL para insertar una nueva categoría
-        $addCategory = "INSERT INTO categories (category_name) VALUES (?)";
-        $stmt = $this->connection->prepare($addCategory);
+        $insertSql = "INSERT INTO categories (category_name) VALUES (?)";
+        $stmt = $this->connection->prepare($insertSql);
 
         if ($stmt === false) {
             return [
@@ -112,7 +109,7 @@ class Category
             ];
         }
 
-        $stmt->bind_param("s", $category_name);
+        $stmt->bind_param("s", $params['category_name']);
         $result = $stmt->execute();
 
         if ($result === false) {
@@ -128,11 +125,37 @@ class Category
         ];
     }
 
-    // Método para editar una categoría existente
-    public function editCategory($id, $category_name)
+    // Método para validar si una categoría existe 
+    public function exists($id)
     {
-        $editCategory = "UPDATE categories SET category_name = ? WHERE id_category = ?";
-        $stmt = $this->connection->prepare($editCategory);
+        $existsSql = "SELECT COUNT(*) as count FROM categories WHERE id_category = ?";
+        $stmt = $this->connection->prepare($existsSql);
+
+        if ($stmt === false) {
+            return false;
+        }
+
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+
+        return $row['count'] > 0;
+    }
+
+    // Método para editar una categoría existente
+    public function update($id, $params)
+    {
+        // Verifica si la categoría existe
+        if (!$this->exists($id)) {
+            return [
+                "result" => "Error",
+                "message" => "La categoría no existe"
+            ];
+        }
+
+        $updateSql = "UPDATE categories SET category_name = ? WHERE id_category = ?";
+        $stmt = $this->connection->prepare($updateSql);
 
         if ($stmt === false) {
             return [
@@ -141,7 +164,7 @@ class Category
             ];
         }
 
-        $stmt->bind_param("si", $category_name, $id);
+        $stmt->bind_param("si", $params['category_name'], $id);
         $result = $stmt->execute();
 
         if ($result === false) {
@@ -158,10 +181,10 @@ class Category
     }
 
     // Método para eliminar una categoría
-    public function deleteCategory($id)
+    public function delete($id)
     {
-        $deleteCategory = "DELETE FROM categories WHERE id_category = ?";
-        $stmt = $this->connection->prepare($deleteCategory);
+        $deleteSql = "DELETE FROM categories WHERE id_category = ?";
+        $stmt = $this->connection->prepare($deleteSql);
 
         // Verificar si la preparación fue exitosa
         if ($stmt === false) {
@@ -191,25 +214,18 @@ class Category
     }
 
     // Método para filtrar por un valor/nombre en particular
-    public function filter($value)
+    public function getByName($value)
     {
         // Preparamos la consulta SQL
-        $filter = "SELECT 
-                    cat.id_category, 
-                    cat.category_name AS category_name, 
-                    sub.id_subcategory, 
-                    sub.subcategory_name 
-                FROM 
-                    categories cat
-                INNER JOIN 
-                    subcategories sub ON cat.id_category = sub.fo_category
-                WHERE 
-                    cat.id_category LIKE ? 
+        $filterSql = "SELECT cat.id_category, cat.category_name AS category_name, sub.id_subcategory, sub.subcategory_name 
+                FROM  categories cat
+                LEFT JOIN  subcategories sub ON cat.id_category = sub.fo_category
+                WHERE  cat.id_category LIKE ? 
                     OR cat.category_name LIKE ? 
                     OR sub.subcategory_name LIKE ?";
 
         // Preparamos la consulta
-        $stmt = $this->connection->prepare($filter);
+        $stmt = $this->connection->prepare($filterSql);
 
         if ($stmt === false) {
             return [
@@ -225,11 +241,11 @@ class Category
 
         // Ejecutamos la consulta
         $stmt->execute();
-        $res = $stmt->get_result();
+        $response = $stmt->get_result();
 
         // Recogemos los resultados
         $results = [];
-        while ($row = $res->fetch_assoc()) {
+        while ($row = $response->fetch_assoc()) {
             $results[] = $row;
         }
 
@@ -237,65 +253,3 @@ class Category
     }
 }
 ?>
-
-
-
-
-<!-- 
-// Se decide usar métodos con sentencias preparadas, por cuestiones de seguridad y buenas prácticas
-// //Método para consultar todas las categorías ordenadas por nombre
-// public function consult()
-// {
-// // Consulta SQL para seleccionar todas las filas de la tabla 'category' ordenadas por 'category_name'
-// $consult = "SELECT * FROM category ORDER BY category_name";
-// // Ejecuta la consulta usando mysqli_query() con la conexión almacenada en $this->connection
-// $res = mysqli_query($this->connection, $consult);
-// //Array para almacenar todas las filas obtenidas en la consulta
-// $categories = [];
-
-// // Recorre cada fila del resultado y la agrega al arreglo $categories
-// while ($row = mysqli_fetch_array($res)) {
-// $categories[] = $row;
-// }
-
-// return $categories;
-// }
-
-// // Método para eliminar una categoría basada en su ID
-// public function deleteCategory($id)
-// {
-// // Consulta SQL para eliminar la categoría con el ID especificado
-// $del = "DELETE FROM category WHERE id_category = $id";
-// // Ejecuta la consulta de eliminación usando mysqli_query() con la conexión almacenada en $this->connection
-// mysqli_query($this->connection, $del);
-
-// // Array para almacenar el resultado y el mensaje de la operación de eliminación
-// $result = [];
-// $result['result'] = "Ok";
-// $result['message'] = "La categoría ha sido eliminada";
-
-// // Se devuelve el arreglo con el resultado y mensaje de la operación
-// return $result;
-// }
-
-// // Método para insertar una categoría
-// public function add($params)
-// {
-// $add = "INSERT INTO category(category_name) VALUES ('$params -> category_name')";
-// mysqli_query($this->connection, $add);
-// $result = [];
-// $result["result"] = "OK";
-// $result["message"] = "La categoría ha sido agregada";
-// return $result;
-// }
-
-// // Método para editar una categoría
-// public function editCategory($id, $params)
-// {
-// $editCategory = "UPDATE category SET category_name = '$params->category_name' WHERE id_category =id";
-// mysqli_query($this->connection, $editCategory);
-// $result = [];
-// $result["result"] = "OK";
-// $result["message"] = "La categoría ha sido editada con éxito";
-// return $result;
-// } -->

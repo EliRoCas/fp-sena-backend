@@ -5,41 +5,38 @@ header('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Ac
 header('Content-Type: application/json');
 
 require_once '../db_connect.php';
-require_once '../models/document_types.php';
+require_once '../models/subcategories.php';
 
-$documentType = new DocumentType($connection);
+$subcategory = new Subcategory($connection);
 
 $requestMethod = $_SERVER['REQUEST_METHOD'];
-$controller = $_GET['controller'] ?? '';
 
 switch ($requestMethod) {
     case 'GET':
         if (isset($_GET['id'])) {
             $id = $_GET['id'];
             http_response_code(200);
-            $response = $documentType->getById($id);
+            $response = $subcategory->getById($id);
         } elseif (isset($_GET['filter'])) {
             $filter = $_GET['filter'];
             http_response_code(200);
-            $response = $documentType->getByName($filter);
+            $response = $subcategory->getByName($filter);
         } else {
             http_response_code(200);
-            $response = $documentType->getAll();
+            $response = $subcategory->getAll();
         }
         break;
     case 'POST':
         $input = json_decode(file_get_contents('php://input'), true);
         http_response_code(201);
-        $response = $documentType->add($input);
+        $response = $subcategory->add($input['subcategory_name'], $input['fo_category']);
         break;
-
     case 'PATCH':
         $id = $_GET['id'] ?? null;
         $input = json_decode(file_get_contents('php://input'), true);
-        // SE añade una validación para verificar si el ID está presente antes de proceder a ejecutar la solicitud. 
         if ($id) {
             http_response_code(200);
-            $response = $documentType->update($id, $input);
+            $response = $subcategory->update($id, $input['subcategory_name'], $input['fo_category']);
         } else {
             http_response_code(400);
             $response = [
@@ -48,12 +45,11 @@ switch ($requestMethod) {
             ];
         }
         break;
-
     case 'DELETE':
         $id = $_GET['id'] ?? null;
         if ($id) {
             http_response_code(204);
-            $response = $documentType->delete($id);
+            $response = $subcategory->delete($id);
         } else {
             http_response_code(400);
             $response = [
@@ -63,14 +59,12 @@ switch ($requestMethod) {
         }
         break;
 
-
     default:
-        http_response_code(500);
+        http_response_code(405);
         $response = [
             'result' => 'Error',
-            'message' => 'Invalid Request Method'
+            'message' => 'Method not allowed'
         ];
-
 }
 
 echo json_encode($response);

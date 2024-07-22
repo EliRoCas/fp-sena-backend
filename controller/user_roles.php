@@ -17,8 +17,7 @@ $userRole = new UserRole($connection);
 // Se utiliza, en lugar de la superglobal $_GET, que almacena los datos pasados como parámetro URL a la variable $control,
 // la superglobal $_SERVER que permite reconocer el tipo de la solicitud realizada por medio del método HTTP de la solicitud
 $requestMethod = $_SERVER['REQUEST_METHOD'];
-// Se obtiene el parámetro "controller" de la URL o un string vacío si no está, con el fin de determinar qué acción realizar
-$controller = $_GET['controller'] ?? '';
+
 
 // SE ejecuta la variable de control "switch" para validar las diferentes acciones (endpoints) que el controlador puede 
 // recibir a partir de cada solicitud HTTP. 
@@ -28,17 +27,22 @@ switch ($requestMethod) {
     case 'GET':
         if (isset($_GET['id'])) {
             $id = $_GET['id'];
+            http_response_code(200);
             $response = $userRole->getById($id);
         } elseif (isset($_GET['filter'])) {
             $filter = $_GET['filter'];
+            http_response_code(200);
             $response = $userRole->getByName($filter);
         } else {
+            http_response_code(200);
             $response = $userRole->getAll();
+
         }
         break;
 
     case 'POST':
         $input = json_decode(file_get_contents('php://input'), true);
+        http_response_code(201);
         $response = $userRole->add($input);
         break;
 
@@ -47,8 +51,10 @@ switch ($requestMethod) {
         $input = json_decode(file_get_contents('php://input'), true);
         // SE añade una validación para verificar si el ID está presente antes de proceder a ejecutar la solicitud. 
         if ($id) {
+            http_response_code(200);
             $response = $userRole->update($id, $input);
         } else {
+            http_response_code(400);
             $response = [
                 'result' => 'Error',
                 'message' => 'ID is required'
@@ -59,8 +65,10 @@ switch ($requestMethod) {
     case 'DELETE':
         $id = $_GET['id'] ?? null;
         if ($id) {
+            http_response_code(204);
             $response = $userRole->delete($id);
         } else {
+            http_response_code(400);
             $response = [
                 'result' => 'Error',
                 'message' => 'ID is required'

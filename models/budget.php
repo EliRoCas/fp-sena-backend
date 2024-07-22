@@ -9,31 +9,31 @@ class Budget
     }
 
     // Método GET para consultar todos los presupuestos
-    public function getBudgets()
+    public function getAll()
     {
-        $getBudgets = "SELECT bud.*, cat.category_name AS categories 
-        FROM budgets 
+        $getAllSql = "SELECT bud.*, cat.category_name AS categories 
+        FROM budgets bud
         INNER JOIN categories cat ON bud.fo_category = cat.id_category
         ORDER BY budget_date";
-        $res = mysqli_query($this->connection, $getBudgets);
+        $response = mysqli_query($this->connection, $getAllSql);
         $budgets = [];
 
-        while ($row = mysqli_fetch_array($res)) {
+        while ($row = mysqli_fetch_assoc($response)) {
             $budgets[] = $row;
         }
         return $budgets;
     }
 
     // MÉTODO GET para consultar un presupuesto por ID con su categoría
-    public function getBudgetById($id)
+    public function getById($id)
     {
-        $getBudget = "SELECT bud.*, cat.category_name AS category
+        $getByIdSql = "SELECT bud.*, cat.category_name AS category
             FROM budgets bud
             INNER JOIN categories cat ON bud.fo_category = cat.id_category
             WHERE bud.id_budget = ?
             ORDER BY bud.budget_date";
 
-        $stmt = $this->connection->prepare($getBudget);
+        $stmt = $this->connection->prepare($getByIdSql);
         if ($stmt === false) {
             return [
                 "result" => "Error",
@@ -43,9 +43,9 @@ class Budget
 
         $stmt->bind_param("i", $id);
         $stmt->execute();
-        $res = $stmt->get_result();
+        $response = $stmt->get_result();
 
-        $budget = $res->fetch_assoc();
+        $budget = $response->fetch_assoc();
 
         if (!$budget) {
             return [
@@ -58,10 +58,10 @@ class Budget
     }
 
     // Método DELETE para eliminar un presupuesto
-    public function deleteBudget($id)
+    public function delete($id)
     {
-        $deleteBudget = "DELETE FROM budgets WHERE id_budget = ?";
-        $stmt = $this->connection->prepare($deleteBudget);
+        $deleteSql = "DELETE FROM budgets WHERE id_budget = ?";
+        $stmt = $this->connection->prepare($deleteSql);
 
         if ($stmt === false) {
             return [
@@ -87,7 +87,7 @@ class Budget
     }
 
     // Método ADD para agregar un nuevo presupuesto
-    public function addBudget($params)
+    public function add($params)
     {
         if (
             !isset($params["budget_date"]) || !isset($params["amount"]) ||
@@ -99,8 +99,8 @@ class Budget
             ];
         }
 
-        $addBudget = "INSERT INTO budgets (budget_date, amount, fo_category, description_budget) VALUES (?, ?, ?, ?)";
-        $stmt = $this->connection->prepare($addBudget);
+        $insertSql = "INSERT INTO budgets (budget_date, amount, fo_category, description_budget) VALUES (?, ?, ?, ?)";
+        $stmt = $this->connection->prepare($insertSql);
 
         if ($stmt === false) {
             return [
@@ -109,12 +109,17 @@ class Budget
             ];
         }
 
+        $budget_date = $params["budget_date"];
+        $amount = $params["amount"];
+        $fo_category = $params["fo_category"];
+        $descrption_budget = $params["description_budget"] ?? null; // Permitir null
+
         $stmt->bind_param(
             "sdss",
-            $params["budget_date"],
-            $params["amount"],
-            $params["fo_category"],
-            $params["description_budget"] ?? null // Permitir null
+            $budget_date,
+            $amount,
+            $fo_category,
+            $descrption_budget
         );
         $result = $stmt->execute();
 
@@ -132,7 +137,7 @@ class Budget
     }
 
     // Método EDIT para actualizar un presupuesto
-    public function editBudget($id, $params)
+    public function update($id, $params)
     {
         if (
             !isset($params["budget_date"]) || !isset($params["amount"]) ||
@@ -144,8 +149,8 @@ class Budget
             ];
         }
 
-        $editBudget = "UPDATE budgets SET budget_date = ?, amount = ?, fo_category = ?, description_budget = ? WHERE id_budget = ?";
-        $stmt = $this->connection->prepare($editBudget);
+        $updateSql = "UPDATE budgets SET budget_date = ?, amount = ?, fo_category = ?, description_budget = ? WHERE id_budget = ?";
+        $stmt = $this->connection->prepare($updateSql);
 
         if ($stmt === false) {
             return [
@@ -154,12 +159,17 @@ class Budget
             ];
         }
 
+        $budget_date = $params["budget_date"];
+        $amount = $params["amount"];
+        $fo_category = $params["fo_category"];
+        $descrption_budget = $params["description_budget"] ?? null; // Permitir null
+
         $stmt->bind_param(
             "sdssi",
-            $params["budget_date"],
-            $params["amount"],
-            $params["fo_category"],
-            $params["description_budget"] ?? null, // Permitir null
+            $budget_date,
+            $amount,
+            $fo_category,
+            $descrption_budget,
             $id
         );
         $result = $stmt->execute();
@@ -178,9 +188,9 @@ class Budget
     }
 
     // MÉTODO FILTRAR para consultar presupuestos por fecha, cantidad o categoría
-    public function filterBudgets($value)
+    public function getByDate($value)
     {
-        $filterBudgets = "SELECT bud.*, cat.category_name AS category
+        $filterSql = "SELECT bud.*, cat.category_name AS category
             FROM budgets bud
             INNER JOIN categories cat ON bud.fo_category = cat.id_category
             WHERE bud.budget_date LIKE ? 
@@ -188,7 +198,7 @@ class Budget
                OR cat.category_name LIKE ?
             ORDER BY bud.budget_date";
 
-        $stmt = $this->connection->prepare($filterBudgets);
+        $stmt = $this->connection->prepare($filterSql);
         if ($stmt === false) {
             return [
                 "result" => "Error",
@@ -200,10 +210,10 @@ class Budget
         $likeValue = "%$value%";
         $stmt->bind_param("sss", $likeValue, $likeValue, $likeValue);
         $stmt->execute();
-        $res = $stmt->get_result();
+        $response = $stmt->get_result();
 
         $budgets = [];
-        while ($row = $res->fetch_assoc()) {
+        while ($row = $response->fetch_assoc()) {
             $budgets[] = $row;
         }
 

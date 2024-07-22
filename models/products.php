@@ -9,32 +9,32 @@ class Product
     }
 
     // Método GET para consultar todos los productos con sus categorías 
-    public function getProducts()
+    public function getAll()
     {
-        $getProducts = "SELECT p.*, cat.category_name AS categories
+        $getAllSql = "SELECT p.*, cat.category_name AS categories
         FROM products p 
         INNER JOIN categories cat ON p.fo_category = cat.id_category
         ORDER BY product_name";
 
-        $res = mysqli_query($this->connection, $getProducts);
+        $response = mysqli_query($this->connection, $getAllSql);
         $products = [];
 
-        while ($row = mysqli_fetch_array($res)) {
+        while ($row = mysqli_fetch_assoc($response)) {
             $products[] = $row;
         }
         return $products;
     }
 
     // Método GET para consultar un producto por ID con sus categorías 
-    public function getProductById($id)
+    public function getById($id)
     {
-        $getProduct = "SELECT p.*, cat.category_name AS category
+        $getByIdSql = "SELECT p.*, cat.category_name AS category
             FROM products p
             INNER JOIN categories cat ON p.fo_category = cat.id_category
             WHERE p.id_product = ?
             ORDER BY p.product_name";
 
-        $stmt = $this->connection->prepare($getProduct);
+        $stmt = $this->connection->prepare($getByIdSql);
         if ($stmt === false) {
             return [
                 "result" => "Error",
@@ -44,9 +44,9 @@ class Product
 
         $stmt->bind_param("i", $id);
         $stmt->execute();
-        $res = $stmt->get_result();
+        $response = $stmt->get_result();
 
-        $product = $res->fetch_assoc();
+        $product = $response->fetch_assoc();
 
         if (!$product) {
             return [
@@ -59,10 +59,10 @@ class Product
     }
 
     // Método DELETE para eliminar un producto
-    public function deleteProduct($id)
+    public function delete($id)
     {
-        $deleteProduct = "DELETE FROM products WHERE id_product = ?";
-        $stmt = $this->connection->prepare($deleteProduct);
+        $deleteSql = "DELETE FROM products WHERE id_product = ?";
+        $stmt = $this->connection->prepare($deleteSql);
 
         if ($stmt === false) {
             return [
@@ -88,7 +88,7 @@ class Product
     }
 
     // Método ADD para agregar un nuevo producto
-    public function addProduct($params)
+    public function add($params)
     {
         if (
             !isset($params["product_name"]) || !isset($params["product_type"]) ||
@@ -100,14 +100,14 @@ class Product
             ];
         }
 
-        $addProduct = "INSERT INTO products (product_name, 
+        $insertSql = "INSERT INTO products (product_name, 
             product_type, 
             product_img, 
             product_description, 
             quantity, 
             fo_category) 
         VALUES (?, ?, ?, ?, ?, ?)";
-        $stmt = $this->connection->prepare($addProduct);
+        $stmt = $this->connection->prepare($insertSql);
 
         if ($stmt === false) {
             return [
@@ -116,14 +116,22 @@ class Product
             ];
         }
 
+        // Preparar valores para bind_param
+        $product_name = $params["product_name"];
+        $product_type = $params["product_type"];
+        $product_img = $params["product_img"];
+        $product_description = $params["product_description"] ?? null;
+        $quantity = $params["quantity"];
+        $fo_category = $params["fo_category"];
+
         $stmt->bind_param(
             "ssssdi",
-            $params["product_name"],
-            $params["product_type"],
-            $params["product_img"] ?? null, // Permitir null
-            $params["product_description"] ?? null, // Permitir null
-            $params["quantity"],
-            $params["fo_category"]
+            $product_name,
+            $product_type,
+            $product_img,
+            $product_description,
+            $quantity,
+            $fo_category
         );
         $result = $stmt->execute();
 
@@ -141,7 +149,7 @@ class Product
     }
 
     // Método EDIT para actualizar un producto
-    public function editProduct($id, $params)
+    public function update($id, $params)
     {
         if (
             !isset($params["product_name"]) || !isset($params["product_type"]) ||
@@ -153,14 +161,14 @@ class Product
             ];
         }
 
-        $editProduct = "UPDATE products SET product_name = ?, 
+        $updateSql = "UPDATE products SET product_name = ?, 
             product_type = ?, 
             product_img = ?, 
             product_description = ?,
             quantity = ?,
             fo_category = ? 
         WHERE id_product = ?";
-        $stmt = $this->connection->prepare($editProduct);
+        $stmt = $this->connection->prepare($updateSql);
 
         if ($stmt === false) {
             return [
@@ -169,14 +177,22 @@ class Product
             ];
         }
 
+        // Preparar valores para bind_param
+        $product_name = $params["product_name"];
+        $product_type = $params["product_type"];
+        $product_img = $params["product_img"];
+        $product_description = $params["product_description"] ?? null;
+        $quantity = $params["quantity"];
+        $fo_category = $params["fo_category"];
+
         $stmt->bind_param(
             "ssssdii",
-            $params["product_name"],
-            $params["product_type"],
-            $params["product_img"] ?? null, // Permitir null
-            $params["product_description"] ?? null, // Permitir null
-            $params["quantity"],
-            $params["fo_category"],
+            $product_name,
+            $product_type,
+            $product_img,
+            $product_description,
+            $quantity,
+            $fo_category,
             $id
         );
         $result = $stmt->execute();
@@ -195,9 +211,9 @@ class Product
     }
 
     // MÉTODO FILTRAR para consultar productos por nombre, tipo o categoría
-    public function filterProducts($value)
+    public function getByName($value)
     {
-        $filterProducts = "SELECT p.*, cat.category_name AS category
+        $filterSql = "SELECT p.*, cat.category_name AS category
             FROM products p
             INNER JOIN categories cat ON p.fo_category = cat.id_category
             WHERE p.product_name LIKE ? 
@@ -205,7 +221,7 @@ class Product
                OR cat.category_name LIKE ?
             ORDER BY p.product_name";
 
-        $stmt = $this->connection->prepare($filterProducts);
+        $stmt = $this->connection->prepare($filterSql);
         if ($stmt === false) {
             return [
                 "result" => "Error",
@@ -217,10 +233,10 @@ class Product
         $likeValue = "%$value%";
         $stmt->bind_param("sss", $likeValue, $likeValue, $likeValue);
         $stmt->execute();
-        $res = $stmt->get_result();
+        $response = $stmt->get_result();
 
         $products = [];
-        while ($row = $res->fetch_assoc()) {
+        while ($row = $response->fetch_assoc()) {
             $products[] = $row;
         }
 

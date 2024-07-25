@@ -14,6 +14,9 @@ $requestMethod = $_SERVER['REQUEST_METHOD'];
 
 switch ($requestMethod) {
 
+    case 'OPTIONS':
+        http_response_code(200);
+
     case 'GET':
         if (isset($_GET['id'])) {
             $id = $_GET['id'];

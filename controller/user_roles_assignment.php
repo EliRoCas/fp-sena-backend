@@ -16,6 +16,10 @@ $requestMethod = $_SERVER['REQUEST_METHOD'];
 $response = [];
 
 switch ($requestMethod) {
+
+    case 'OPTIONS':
+        http_response_code(200);
+
     //Se consultan los roles de usuario
     case 'GET':
         if (isset($_GET['id_user'])) {
@@ -59,6 +63,8 @@ switch ($requestMethod) {
         }
         break;
     default:
+        http_response_code(405);
+
         $response = [
             'result' => 'Error',
             'message' => "Método inválido"

@@ -8,11 +8,16 @@ header('Content-Type: application/json');
 require_once '../db_connect.php';
 require_once '../models/products.php';
 
+
+
 $product = new Product($connection);
 
 $requestMethod = $_SERVER['REQUEST_METHOD'];
 
 switch ($requestMethod) {
+
+    case 'OPTIONS':
+        http_response_code(200);
 
     case 'GET':
         if (isset($_GET['id'])) {
@@ -50,8 +55,8 @@ switch ($requestMethod) {
     case 'DELETE':
         $id = $_GET['id'] ?? null;
         if ($id) {
-            http_response_code(204);
             $response = $product->delete($id);
+            http_response_code(204);
         } else {
             http_response_code(400);
             $response = [

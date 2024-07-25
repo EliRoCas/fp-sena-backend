@@ -25,6 +25,9 @@ $requestMethod = $_SERVER['REQUEST_METHOD'];
 switch ($requestMethod) {
     // Se le da manejo al método "GET" por medio de la estructura de control "if...elseif", para validar qué respuesta 
     // generar según cada controller. 
+    case 'OPTIONS':
+        http_response_code(200);
+
     case 'GET':
         if (isset($_GET['id'])) {
             $id = $_GET['id'];

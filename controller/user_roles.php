@@ -4,6 +4,7 @@
 header('Access-Control-Allow-Origin: *');
 // Se especifican los encabezados permitidos en las solicitudes HTTP. 
 header('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH');
 // Se establece el header "Content-Type" a "application/json" indicando que la respuesta es de tipo json
 header('Content-Type: application/json');
 

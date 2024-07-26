@@ -102,7 +102,7 @@ class Product
         }
 
         $insertSql = "INSERT INTO products (product_name, 
-            fo_category, 
+            fo_subcategory, 
             product_img, 
             product_description, 
             quantity, 

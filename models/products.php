@@ -14,7 +14,7 @@ class Product
         $getAllSql = "SELECT p.*, cat.category_name AS categories
         FROM products p 
         INNER JOIN categories cat ON p.fo_category = cat.id_category
-        ORDER BY product_name";
+        ORDER BY id_product";
 
         $response = mysqli_query($this->connection, $getAllSql);
         $products = [];

@@ -91,8 +91,9 @@ class Product
     public function add($params)
     {
         if (
-            !isset($params["product_name"]) || !isset($params["product_type"]) ||
-            !isset($params["quantity"]) || !isset($params["fo_category"])
+            !isset($params["product_name"]) ||
+            !isset($params["quantity"]) ||
+            !isset($params["fo_category"])
         ) {
             return [
                 "result" => "Error",
@@ -101,7 +102,7 @@ class Product
         }
 
         $insertSql = "INSERT INTO products (product_name, 
-            product_type, 
+            fo_category, 
             product_img, 
             product_description, 
             quantity, 
@@ -118,7 +119,7 @@ class Product
 
         // Preparar valores para bind_param
         $product_name = $params["product_name"];
-        $product_type = $params["product_type"];
+        $fo_subcategory = $params["fo_subcategory"];
         $product_img = $params["product_img"];
         $product_description = $params["product_description"] ?? null;
         $quantity = $params["quantity"];
@@ -127,7 +128,7 @@ class Product
         $stmt->bind_param(
             "ssssdi",
             $product_name,
-            $product_type,
+            $fo_subcategory,
             $product_img,
             $product_description,
             $quantity,
@@ -152,8 +153,9 @@ class Product
     public function update($id, $params)
     {
         if (
-            !isset($params["product_name"]) || !isset($params["product_type"]) ||
-            !isset($params["quantity"]) || !isset($params["fo_category"])
+            !isset($params["product_name"]) ||
+            !isset($params["quantity"]) ||
+            !isset($params["fo_category"])
         ) {
             return [
                 "result" => "Error",
@@ -162,7 +164,7 @@ class Product
         }
 
         $updateSql = "UPDATE products SET product_name = ?, 
-            product_type = ?, 
+            fo_subcategory = ?, 
             product_img = ?, 
             product_description = ?,
             quantity = ?,
@@ -179,7 +181,7 @@ class Product
 
         // Preparar valores para bind_param
         $product_name = $params["product_name"];
-        $product_type = $params["product_type"];
+        $fo_subcategory = $params["fo_subcategory"];
         $product_img = $params["product_img"];
         $product_description = $params["product_description"] ?? null;
         $quantity = $params["quantity"];
@@ -188,7 +190,7 @@ class Product
         $stmt->bind_param(
             "ssssdii",
             $product_name,
-            $product_type,
+            $fo_subcategory,
             $product_img,
             $product_description,
             $quantity,
@@ -213,11 +215,12 @@ class Product
     // MÉTODO FILTRAR para consultar productos por nombre, tipo o categoría
     public function getByName($value)
     {
-        $filterSql = "SELECT p.*, cat.category_name AS category
+        $filterSql = "SELECT p.*, cat.category_name AS category, sub.subcategory_name AS subcategory
             FROM products p
             INNER JOIN categories cat ON p.fo_category = cat.id_category
+            INNER JOIN subcategories sub ON p.fo_subcategory = sub.id_subcategory
             WHERE p.product_name LIKE ? 
-               OR p.product_type LIKE ? 
+               OR sub.subcategory_name LIKE ? 
                OR cat.category_name LIKE ?
             ORDER BY p.product_name";
 

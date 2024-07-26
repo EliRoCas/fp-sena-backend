@@ -20,15 +20,48 @@ switch ($requestMethod) {
     case 'GET':
         if (isset($_GET['id'])) {
             $id = $_GET['id'];
-            http_response_code(200);
             $response = $transaction->getById($id);
+            if ($response) {
+                http_response_code(200);
+            } else {
+                http_response_code(404);
+                $response = ["result" => "Error", "message" => "Transacción no encontrada"];
+            }
         } elseif (isset($_GET['filter'])) {
-            $id = $_GET['filter'];
-            http_response_code(200);
-            $response = $transaction->getByName($id);
+            $filter = $_GET['filter'];
+            $response = $transaction->getByName($filter);
+            if ($response) {
+                http_response_code(200);
+            } else {
+                http_response_code(404);
+                $response = ["result" => "Error", "message" => "Transacción no encontrada"];
+            }
+        } elseif (isset($_GET['type'])) {
+            $type = $_GET['type'];
+            $response = $transaction->getByType($type);
+            if ($response) {
+                http_response_code(200);
+            } else {
+                http_response_code(404);
+                $response = ["result" => "Error", "message" => "Transacción no encontrada"];
+            }
+        } elseif (isset($_GET['date'])) {
+            $date = $_GET['date'];
+            $response = $transaction->getByDate($date);
+            if ($response) {
+                http_response_code(200);
+            } else {
+                http_response_code(404);
+                $response = ["result" => "Error", "message" => "Transacción no encontrada"];
+            }
         } else {
-            http_response_code(200);
             $response = $transaction->getAll();
+            if ($response) {
+                http_response_code(200);
+            } else {
+                http_response_code(404);
+                $response = ["result" => "Error", "message" => "No se encontraron transacciones"];
+            }
         }
         break;
     case 'POST':

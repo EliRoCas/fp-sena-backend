@@ -12,15 +12,17 @@ class Transaction
     // MÉTODO GET para consultar todas las transacciones
     public function getAll()
     {
-        $getAllSql = "SELECT trans.*, cat.category_name AS category_name
-            FROM transactions trans
-            INNER JOIN categories cat ON trans.fo_category = cat.id_category
-            ORDER BY trans.transaction_date";
+        $getAllSql = "SELECT trans.*, cat.category_name AS category_name, sub.subcategory_name AS subcategory_name, rose.rose_type_name AS rose_type_name
+        FROM transactions trans
+        INNER JOIN categories cat ON trans.fo_category = cat.id_category
+        LEFT JOIN subcategories sub ON trans.fo_subcategory = sub.id_subcategory
+        LEFT JOIN rose_types rose ON trans.fo_rose_type = rose.id_rose_type
+        ORDER BY trans.transaction_date";
 
         $response = mysqli_query($this->connection, $getAllSql);
         $transactions = [];
 
-        while ($row = mysqli_fetch_array($response, MYSQLI_ASSOC)) {
+        while ($row = mysqli_fetch_assoc($response)) {
             $transactions[] = $row;
         }
         return $transactions;
@@ -29,10 +31,12 @@ class Transaction
     // Método GET para consultar una transacción por ID
     public function getById($id)
     {
-        $getByIdSql = "SELECT trans.*, cat.category_name AS category_name
-            FROM transactions trans
-            INNER JOIN categories cat ON trans.fo_category = cat.id_category
-            WHERE  trans.id_transaction = ?";
+        $getByIdSql = "SELECT trans.*, cat.category_name AS category_name, sub.subcategory_name AS subcategory_name, rose.rose_type_name AS rose_type_name
+        FROM transactions trans
+        INNER JOIN categories cat ON trans.fo_category = cat.id_category
+        LEFT JOIN subcategories sub ON trans.fo_subcategory = sub.id_subcategory
+        LEFT JOIN rose_types rose ON trans.fo_rose_type = rose.id_rose_type
+        WHERE trans.id_transaction = ?";
 
         $stmt = $this->connection->prepare($getByIdSql);
 
@@ -58,6 +62,7 @@ class Transaction
 
         return $transaction;
     }
+
 
     // MÉTODO DELETE 
     public function delete($id)
@@ -104,8 +109,18 @@ class Transaction
         }
 
         // Preparar la consulta SQL
-        $insertSql = "INSERT INTO transactions (transaction_name, transaction_rose_export, transaction_rose_type, transaction_customer, transaction_date, transaction_amount, transaction_description, transaction_type, fo_category) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $insertSql = "INSERT INTO transactions (
+        transaction_name,
+         transaction_rose_export, 
+         fo_rose_type, 
+         transaction_customer, 
+         transaction_date, 
+         transaction_amount, 
+         transaction_description, 
+         transaction_type, 
+         fo_category, 
+         fo_subcategory) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->connection->prepare($insertSql);
 
         if ($stmt === false) {
@@ -118,26 +133,28 @@ class Transaction
         // Preparar valores para bind_param
         $transaction_name = $params["transaction_name"];
         $transaction_rose_export = $params["transaction_rose_export"] ?? null;
-        $transaction_rose_type = $params["transaction_rose_type"] ?? null;
+        $fo_rose_type = $params["fo_rose_type"] ?? null;
         $transaction_customer = $params["transaction_customer"] ?? null;
         $transaction_date = $params["transaction_date"];
         $transaction_amount = $params["transaction_amount"];
         $transaction_description = $params["transaction_description"] ?? null;
         $transaction_type = $params["transaction_type"];
         $fo_category = $params["fo_category"];
+        $fo_subcategory = $params["fo_subcategory"];
 
         // Bind de parámetros
         $stmt->bind_param(
-            "sssssdsis",
+            "ssissdssii",
             $transaction_name,
             $transaction_rose_export,
-            $transaction_rose_type,
+            $fo_rose_type,
             $transaction_customer,
             $transaction_date,
             $transaction_amount,
             $transaction_description,
             $transaction_type,
-            $fo_category
+            $fo_category,
+            $fo_subcategory
         );
         $result = $stmt->execute();
 
@@ -169,13 +186,14 @@ class Transaction
 
         $updateSql = "UPDATE transactions SET transaction_name = ?, 
             transaction_rose_export = ?, 
-            transaction_rose_type = ?, 
+            fo_rose_type = ?, 
             transaction_customer = ?, 
             transaction_date = ?, 
             transaction_amount = ?, 
             transaction_description = ?, 
             transaction_type = ?, 
-            fo_category = ? 
+            fo_category = ?, 
+            fo_subcategory = ? 
         WHERE id_transaction = ?";
         $stmt = $this->connection->prepare($updateSql);
 
@@ -189,26 +207,28 @@ class Transaction
         // Preparar valores para bind_param
         $transaction_name = $params["transaction_name"];
         $transaction_rose_export = $params["transaction_rose_export"] ?? null;
-        $transaction_rose_type = $params["transaction_rose_type"] ?? null;
+        $fo_rose_type = $params["fo_rose_type"] ?? null;
         $transaction_customer = $params["transaction_customer"] ?? null;
         $transaction_date = $params["transaction_date"];
         $transaction_amount = $params["transaction_amount"];
         $transaction_description = $params["transaction_description"] ?? null;
         $transaction_type = $params["transaction_type"];
         $fo_category = $params["fo_category"];
+        $fo_subcategory = $params["fo_subcategory"];
 
         // Bind de parámetros
         $stmt->bind_param(
-            "sssssdssii",
+            "ssissdssiii",
             $transaction_name,
             $transaction_rose_export,
-            $transaction_rose_type,
+            $fo_rose_type,
             $transaction_customer,
             $transaction_date,
             $transaction_amount,
             $transaction_description,
             $transaction_type,
             $fo_category,
+            $fo_subcategory,
             $id
         );
 
@@ -257,5 +277,70 @@ class Transaction
 
         return $result;
     }
+
+    // Filtrar por "transaction_type" 
+    public function getByType($type)
+    {
+        $filterByTypeSql = "SELECT trans.*, cat.category_name AS category_name, sub.subcategory_name AS subcategory_name, rose.rose_type_name AS rose_type_name
+        FROM transactions trans
+        INNER JOIN categories cat ON trans.fo_category = cat.id_category
+        LEFT JOIN subcategories sub ON trans.fo_subcategory = sub.id_subcategory
+        LEFT JOIN rose_types rose ON trans.fo_rose_type = rose.id_rose_type
+        WHERE trans.transaction_type = ?";
+
+        $stmt = $this->connection->prepare($filterByTypeSql);
+
+        if ($stmt === false) {
+            return [
+                "result" => "Error",
+                "message" => "Error al preparar la consulta: " . $this->connection->error
+            ];
+        }
+
+        $stmt->bind_param("s", $type);
+        $stmt->execute();
+        $response = $stmt->get_result();
+
+        $transactions = [];
+        while ($row = $response->fetch_assoc()) {
+            $transactions[] = $row;
+        }
+
+        return $transactions;
+    }
+
+
+    // Filtrar por fechas 
+    public function getByDate($date)
+    {
+        $filterByDateSql = "SELECT trans.*, cat.category_name AS category_name, sub.subcategory_name AS subcategory_name, rose.rose_type_name AS rose_type_name
+        FROM transactions trans
+        INNER JOIN categories cat ON trans.fo_category = cat.id_category
+        LEFT JOIN subcategories sub ON trans.fo_subcategory = sub.id_subcategory
+        LEFT JOIN rose_types rose ON trans.fo_rose_type = rose.id_rose_type
+        WHERE trans.transaction_date = ?";
+
+        $stmt = $this->connection->prepare($filterByDateSql);
+
+        if ($stmt === false) {
+            return [
+                "result" => "Error",
+                "message" => "Error al preparar la consulta: " . $this->connection->error
+            ];
+        }
+
+        $stmt->bind_param("s", $date);
+        $stmt->execute();
+        $response = $stmt->get_result();
+
+        $transactions = [];
+        while ($row = $response->fetch_assoc()) {
+            $transactions[] = $row;
+        }
+
+        return $transactions;
+    }
+
+
 }
 ?>

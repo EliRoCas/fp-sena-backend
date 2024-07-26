@@ -50,7 +50,7 @@ switch ($requestMethod) {
         $response = $userRole->add($input);
         break;
 
-    case 'PATCH':
+    case 'PUT':
         $id = $_GET['id'] ?? null;
         $input = json_decode(file_get_contents('php://input'), true);
         // SE añade una validación para verificar si el ID está presente antes de proceder a ejecutar la solicitud. 

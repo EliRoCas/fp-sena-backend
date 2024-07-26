@@ -13,7 +13,10 @@ class Subcategory
     // Método para consultar todas las subcategorías
     public function getAll()
     {
-        $getAllSql = "SELECT * FROM subcategories ORDER BY subcategory_name";
+        $getAllSql = "SELECT subcat.*, cat.id_category, cat.category_name AS category_name
+          FROM subcategories subcat
+          LEFT JOIN categories cat ON subcat.fo_category = cat.id_category
+                 ORDER BY subcat.id_subcategory";
 
         //Se prepara la consulta con una conexión a la DB 
         //la variable $stmt es una instancia de la clase "mysqli_stmt" para sentencias SQL preparadas

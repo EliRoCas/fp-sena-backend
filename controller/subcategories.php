@@ -35,7 +35,7 @@ switch ($requestMethod) {
         http_response_code(201);
         $response = $subcategory->add($input['subcategory_name'], $input['fo_category']);
         break;
-    case 'PATCH':
+    case 'PUT':
         $id = $_GET['id'] ?? null;
         $input = json_decode(file_get_contents('php://input'), true);
         if ($id) {

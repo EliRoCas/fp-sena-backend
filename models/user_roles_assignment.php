@@ -40,10 +40,10 @@ class UserRoleAssignment
     // Método para consultar los roles de un usuario
     public function getUserRoles($id_user)
     {
-        $getUserRolesSql = "SELECT ur.* FROM user_roles ur
+        $getUserRoleSql = "SELECT ur.* FROM user_roles ur
                     INNER JOIN user_roles_assignments ura ON ur.id_user_role = ura.fo_user_role
                     WHERE ura.fo_user = ?";
-        $stmt = $this->connection->prepare($getUserRolesSql);
+        $stmt = $this->connection->prepare($getUserRoleSql);
 
         if ($stmt === false) {
             return [
@@ -62,6 +62,31 @@ class UserRoleAssignment
         }
 
         return $userRoles;
+    }
+    // Método para consultar los roles de un usuario
+    public function getAll()
+    {
+        $getAllSql = "SELECT ur.*, ura.fo_user 
+                      FROM user_roles ur
+                      INNER JOIN user_roles_assignments ura ON ur.id_user_role = ura.fo_user_role
+                      ORDER BY ura.fo_user";
+
+        $response = mysqli_query($this->connection, $getAllSql);
+
+        if (!$response) {
+            return [
+                "result" => "Error",
+                "message" => "Error en la consulta: " . mysqli_error($this->connection)
+            ];
+        }
+
+        $user_roles_assignment = [];
+
+        while ($row = mysqli_fetch_assoc($response)) {
+            $user_roles_assignment[] = $row;
+        }
+
+        return $user_roles_assignment;
     }
 
     // Método para eliminar un rol asignado a un usuario

@@ -20,23 +20,20 @@ switch ($requestMethod) {
     case 'OPTIONS':
         http_response_code(200);
 
-    //Se consultan los roles de usuario
+    // Se consulta un rol de usuario 
     case 'GET':
         if (isset($_GET['id_user'])) {
             $id_user = $_GET['id_user'];
             $response = $userRoleAssignment->getUserRoles($id_user);
         } else {
-            $response = [
-                'result' => 'Error',
-                'message' => 'El id_user es requerido'
-            ];
+            $response = $userRoleAssignment->getAll();
         }
         break;
     //Se asigna un rol a un usuario
     case 'POST':
         $input = json_decode(file_get_contents('php://input'), true);
         $id_user = $input["id_user"];
-        $id_role = $input["id_role"];
+        $id_role = $input["id_user_role"];
 
         if ($id_user && $id_role) {
             $response = $userRoleAssignment->assignUserRole($id_user, $id_role);
@@ -51,7 +48,7 @@ switch ($requestMethod) {
     case 'DELETE':
         $input = json_decode(file_get_contents('php://input'), true);
         $id_user = $input["id_user"];
-        $id_role = $input["id_role"];
+        $id_role = $input["id_user_role"];
 
         if ($id_user && $id_role) {
             $response = $userRoleAssignment->unassignUserRole($id_user, $id_role);

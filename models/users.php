@@ -107,6 +107,9 @@ class Users
                 "message" => "Todos los campos son requeridos" . $this->connection->error,
             ];
         }
+
+        $hashedPassword = password_hash($params["password"], PASSWORD_BCRYPT);
+
         $insertSql = "INSERT INTO users (
         user_name, 
         user_lastname, 
@@ -131,7 +134,7 @@ class Users
             $params["fo_document_type"],
             $params["document_number"],
             $params["email"],
-            $params["password"]
+            $hashedPassword
         );
         $result = $stmt->execute();
 
@@ -160,6 +163,9 @@ class Users
             ];
         }
 
+        $hashedPassword = password_hash($params["password"], PASSWORD_BCRYPT);
+
+
         $updatSql = "UPDATE users SET user_name = ?, user_lastname = ?, fo_document_type = ?, document_number = ?,
          email = ?, password = ? WHERE id_user = ?";
         $stmt = $this->connection->prepare($updatSql);
@@ -178,7 +184,7 @@ class Users
             $params["fo_document_type"],
             $params["document_number"],
             $params["email"],
-            $params["password"],
+            $hashedPassword,
             $id
         );
         $result = $stmt->execute();

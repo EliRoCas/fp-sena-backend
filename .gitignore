@@ -1,2 +1,5 @@
-db_connect.php
-node_modules
+.env
+/node_modules/
+/vendor/
+composer.lock
+*.php.cache

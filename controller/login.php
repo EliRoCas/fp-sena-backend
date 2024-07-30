@@ -11,36 +11,71 @@ require '../db_connect.php';
 require '../models/login.php';
 
 use \Firebase\JWT\JWT;
+use \Dotenv\Dotenv;
 
-// Se commprueba si los datos están presentes en la solicitud
-if (!isset($_POST['email']) || !isset($_POST['password'])) {
-    http_response_code(400); 
-    echo json_encode(['error' => 'Email y/o contraseña no proporcionados']);
+// Se carga el archivo .env
+$dotenv = Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
+
+// Se incluye la clave secreta y se hace un proceso de verificación 
+$jwt_secret = $_ENV['JWT_SECRET'];
+
+if (!$jwt_secret) {
+    http_response_code(500);
+    echo json_encode(['error' => 'JWT_SECRET no está definido']);
     exit();
 }
 
-$email = $_POST['email'];
-$password = $_POST['password'];
 
-$jwt_secret = $_ENV['JWT_SECRET'];
+$requestMethod = $_SERVER['REQUEST_METHOD'];
 
-$login = new Login($connection);
-$user = $login->getUserByEmailAndPassword($email, $password);
+switch ($requestMethod) {
+    case 'OPTIONS':
+        http_response_code(200);
+        break;
 
-if ($user) {
-    $issuedAt = time();
-    $expirationTime = $issuedAt + 3600;
-    $payload = [
-        'iat' => $issuedAt,
-        'exp' => $expirationTime,
-        'email' => $email,
-    ];
+    case 'POST':
+        $input = json_decode(file_get_contents('php://input'), true);
 
-    $jwt = JWT::encode($payload, $jwt_secret, 'HS256');
-    echo json_encode(['token' => $jwt]);
-} else {
-    http_response_code(401);
-    echo json_encode(['error' => 'Credenciales inválidas']);
+        // Se comprueba si los datos están presentes en la solicitud
+        if (!isset($input['email']) || !isset($input['password'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Email y/o contraseña no proporcionados']);
+            exit();
+        }
+
+        $email = $input['email'];
+        $password = $input['password'];
+
+        $login = new Login($connection);
+        $user = $login->getUserByEmailAndPassword($email, $password);
+
+        if ($user) {
+            $issuedAt = time();
+            $expirationTime = $issuedAt + 3600;
+            $payload = [
+                'iat' => $issuedAt,
+                'exp' => $expirationTime,
+                'email' => $email,
+            ];
+
+            try {
+                $jwt = JWT::encode($payload, $jwt_secret, 'HS256');
+                echo json_encode(['token' => $jwt]);
+            } catch (Exception $e) {
+                http_response_code(500);
+                echo json_encode(['error' => 'Error al generar el token']);
+            }
+        } else {
+            http_response_code(401);
+            echo json_encode(['error' => 'Credenciales inválidas']);
+        }
+        break;
+
+    default:
+        http_response_code(405);
+        echo json_encode(['error' => 'Método no permitido']);
+        break;
 }
 
 ?>

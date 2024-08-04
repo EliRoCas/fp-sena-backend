@@ -90,19 +90,34 @@ class UserRoleAssignment
     }
 
     // Método para eliminar un rol asignado a un usuario
-    public function unassignUserRole($id_user, $roleId)
+    public function unassignUserRole($id_user, $roleId = null)
     {
-        $deleteSql = "DELETE FROM user_roles_assignments WHERE fo_user = ? AND fo_user_role = ?";
-        $stmt = $this->connection->prepare($deleteSql);
+        if ($roleId === null) {
+            $deleteSql = "DELETE FROM user_roles_assignments WHERE fo_user = ?";
+            $stmt = $this->connection->prepare($deleteSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+            if ($stmt === false) {
+                return [
+                    "result" => "Error",
+                    "message" => "Error al preparar la consulta: " . $this->connection->error
+                ];
+            }
+
+            $stmt->bind_param("i", $id_user);
+        } else {
+            $deleteSql = "DELETE FROM user_roles_assignments WHERE fo_user = ? AND fo_user_role = ?";
+            $stmt = $this->connection->prepare($deleteSql);
+
+            if ($stmt === false) {
+                return [
+                    "result" => "Error",
+                    "message" => "Error al preparar la consulta: " . $this->connection->error
+                ];
+            }
+
+            $stmt->bind_param("ii", $id_user, $roleId);
         }
 
-        $stmt->bind_param("ii", $id_user, $roleId);
         $result = $stmt->execute();
 
         if ($result === false) {

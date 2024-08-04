@@ -32,7 +32,7 @@ switch ($requestMethod) {
     //Se asigna un rol a un usuario
     case 'POST':
         $input = json_decode(file_get_contents('php://input'), true);
-        $id_user = $input["id_user"];
+        $id_user = $input["fo_user"];
         $id_role = $input["id_user_role"];
 
         if ($id_user && $id_role) {
@@ -46,12 +46,9 @@ switch ($requestMethod) {
         break;
     // Se elimina un rol asignado a un usuario 
     case 'DELETE':
-        $input = json_decode(file_get_contents('php://input'), true);
-        $id_user = $input["id_user"];
-        $id_role = $input["id_user_role"];
-
-        if ($id_user && $id_role) {
-            $response = $userRoleAssignment->unassignUserRole($id_user, $id_role);
+        if (isset($_GET['id'])) {
+            $id_user = $_GET['id'];
+            $response = $userRoleAssignment->unassignUserRole($id_user);
         } else {
             $response = [
                 'result' => 'Error',

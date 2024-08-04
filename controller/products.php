@@ -75,3 +75,5 @@ switch ($requestMethod) {
 }
 
 echo json_encode($response);
+
+?>

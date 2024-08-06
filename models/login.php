@@ -35,4 +35,3 @@ class Login
         return null;
     }
 }
-?>

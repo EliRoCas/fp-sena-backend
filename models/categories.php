@@ -13,57 +13,31 @@ class Category
     // Método para consultar todas las categorías con sus subcategorías
     public function getAll()
     {
-        // Se ejecuta la consulta SQL con el método left join para asegurar que se obtengan los resultados de las 
-        // categorías con y sin subcategorías. 
-        $getAllSql = "SELECT cat.*, sub.id_subcategory, sub.subcategory_name AS subcategory_name
-            FROM categories cat
-            LEFT JOIN  subcategories sub ON cat.id_category = sub.fo_category
-            ORDER BY cat.category_name, sub.subcategory_name
-        ";
-
+        // Se ejecuta la consulta para obtener todas las categorías existentes 
+        $getAllSql = "SELECT * FROM categories ORDER BY category_name";
         // Se envía y ejecuta la consulta por medio de la función "mysqli_query" y se determina la conexión
-        // Además, se inicializa un array vacío que contendrá los datos de la iteración del bucle while. 
         $response = mysqli_query($this->connection, $getAllSql);
+        // Se inicializa un array vacío que contendrá los datos de la iteración del bucle while (las categorías). 
         $categories = [];
 
         // Se obtiene una fila de datos "mysqli...ASSOC)" con el resultado de la iteración, en donde row contendrá 
         // los nombre de columna como claves del array. 
-        while ($row = mysqli_fetch_array($response, MYSQLI_ASSOC)) {
-            //Se identifica la categoría actual por su id, para organizar el array 
-            $categoryId = $row['id_category'];
-            // Se verifica el si el objeto con el "id_category" identifica se encuentra o no en el array para continuar 
-            // con el proceso. 
-            if (!isset($categories[$categoryId])) {
-                //Si no se encuentra, se inicializa el proceso y se crea una nueva entrada en el array con los datos dados
-                $categories[$categoryId] = [
-                    'id_category' => $row['id_category'],
-                    'category_name' => $row['category_name'],
-                    'subcategories' => []
-                ];
-            }
-            // Se hace una validación similiar a la anterior, para determinar los datos que se contendrán en las filas de las subcategorias
-            if (!is_null($row['id_subcategory'])) {
-                $categories[$categoryId]['subcategories'][] = [
-                    'id_subcategory' => $row['id_subcategory'],
-                    'subcategory_name' => $row['subcategory_name']
-                ];
-            }
+        while ($row = mysqli_fetch_assoc($response)) {
+            //Se agrega cada elemento de la categoría en el array 
+            $categories[] = [
+                'id_category' => $row['id_category'],
+                'category_name' => $row['category_name']
+            ];
         }
-
+        // Se retorna el array de las categorías 
         return array_values($categories);
     }
-
 
     // MÉTODO GET para consultar una categoría por ID con sus subcategorías
     public function getById($id)
     {
-        $getByIdSql = "SELECT cat.*, sub.id_subcategory, sub.subcategory_name AS subcategory_name
-           FROM categories cat
-           LEFT JOIN subcategories sub ON cat.id_category = sub.fo_category
-           WHERE cat.id_category = ?
-           ORDER BY sub.subcategory_name;
-       ";
-
+        $getByIdSql = "SELECT * FROM categories WHERE id_category = ?";
+        // Se ejecuta la consulta preparada para validar la conexión
         $stmt = $this->connection->prepare($getByIdSql);
         if ($stmt === false) {
             return [
@@ -82,17 +56,48 @@ class Category
                 $category = [
                     'id_category' => $row['id_category'],
                     'category_name' => $row['category_name'],
-                    'subcategories' => []
                 ];
-            }
-            if (!empty($row['id_subcategory'])) {
-                $category['subcategories'][] = [
-                    'id_subcategory' => $row['id_subcategory'],
-                    'subcategory_name' => $row['subcategory_name']
+            } else {
+                return [
+                    "result" => "Error",
+                    "message" => "No se encontró la categoría con el id proporcionado."
                 ];
             }
         }
         return $category;
+    }
+
+    // Método para filtrar por un valor/nombre en particular
+    public function getByName($value)
+    {
+        // Preparamos la consulta SQL
+        $filterSql = "SELECT * FROM categories WHERE category_name LIKE ?";
+        // Preparamos la consulta
+        $stmt = $this->connection->prepare($filterSql);
+
+        if ($stmt === false) {
+            return [
+                "result" => "Error",
+                "message" => "Error al preparar la consulta: " . $this->connection->error
+            ];
+        }
+
+        // Usamos parámetros preparados para evitar inyección SQL
+        // Se incluye (%) para indicar que cualquier dato puede estar antes o después del valor
+        $searchValue = "%{$value}%";
+        $stmt->bind_param("s", $searchValue);
+
+        // Ejecutamos la consulta
+        $stmt->execute();
+        $response = $stmt->get_result();
+
+        // Recogemos los resultados
+        $results = [];
+        while ($row = $response->fetch_assoc()) {
+            $results[] = $row;
+        }
+
+        return $results;
     }
 
     // Método para agregar una nueva categoría
@@ -213,43 +218,4 @@ class Category
         ];
     }
 
-    // Método para filtrar por un valor/nombre en particular
-    public function getByName($value)
-    {
-        // Preparamos la consulta SQL
-        $filterSql = "SELECT cat.id_category, cat.category_name AS category_name, sub.id_subcategory, sub.subcategory_name 
-                FROM  categories cat
-                LEFT JOIN  subcategories sub ON cat.id_category = sub.fo_category
-                WHERE  cat.id_category LIKE ? 
-                    OR cat.category_name LIKE ? 
-                    OR sub.subcategory_name LIKE ?";
-
-        // Preparamos la consulta
-        $stmt = $this->connection->prepare($filterSql);
-
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
-        }
-
-        // Usamos parámetros preparados para evitar inyección SQL
-        // Se incluye (%) para indicar que cualquier dato puede estar antes o después del valor
-        $searchValue = "%{$value}%";
-        $stmt->bind_param("sss", $searchValue, $searchValue, $searchValue);
-
-        // Ejecutamos la consulta
-        $stmt->execute();
-        $response = $stmt->get_result();
-
-        // Recogemos los resultados
-        $results = [];
-        while ($row = $response->fetch_assoc()) {
-            $results[] = $row;
-        }
-
-        return $results;
-    }
 }
-?>

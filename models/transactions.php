@@ -12,14 +12,9 @@ class Transaction
     // MÉTODO GET para consultar todas las transacciones
     public function getAll()
     {
-        $getAllSql = "SELECT trans.*, cat.category_name AS category_name, sub.subcategory_name AS subcategory_name, rose.rose_type_name AS rose_type_name
-        FROM transactions trans
-        INNER JOIN categories cat ON trans.fo_category = cat.id_category
-        LEFT JOIN subcategories sub ON trans.fo_subcategory = sub.id_subcategory
-        LEFT JOIN rose_types rose ON trans.fo_rose_type = rose.id_rose_type
-        ORDER BY trans.transaction_date";
-
+        $getAllSql = "SELECT * FROM transactions ORDER BY transaction_date";
         $response = mysqli_query($this->connection, $getAllSql);
+        
         $transactions = [];
 
         while ($row = mysqli_fetch_assoc($response)) {
@@ -31,13 +26,7 @@ class Transaction
     // Método GET para consultar una transacción por ID
     public function getById($id)
     {
-        $getByIdSql = "SELECT trans.*, cat.category_name AS category_name, sub.subcategory_name AS subcategory_name, rose.rose_type_name AS rose_type_name
-        FROM transactions trans
-        INNER JOIN categories cat ON trans.fo_category = cat.id_category
-        LEFT JOIN subcategories sub ON trans.fo_subcategory = sub.id_subcategory
-        LEFT JOIN rose_types rose ON trans.fo_rose_type = rose.id_rose_type
-        WHERE trans.id_transaction = ?";
-
+        $getByIdSql = "SELECT * FROM transactions WHERE id_transaction = ?";
         $stmt = $this->connection->prepare($getByIdSql);
 
         if ($stmt === false) {
@@ -63,12 +52,12 @@ class Transaction
         return $transaction;
     }
 
-
-    // MÉTODO DELETE 
-    public function delete($id)
+    // MÉTODO FILTRAR
+    public function getByName($value)
     {
-        $deleteSql = "DELETE FROM transactions WHERE id_transaction = ?";
-        $stmt = $this->connection->prepare($deleteSql);
+        $filterSql = "SELECT * FROM transactions WHERE transaction_name LIKE ? ORDER BY transaction_name";
+        // Preparamos la consulta
+        $stmt = $this->connection->prepare($filterSql);
 
         if ($stmt === false) {
             return [
@@ -77,20 +66,68 @@ class Transaction
             ];
         }
 
-        $stmt->bind_param("i", $id);
-        $result = $stmt->execute();
+        // Usamos parámetros preparados para evitar inyección SQL
+        $searchValue = "%{$value}%";
+        $stmt->bind_param("s", $searchValue);
+        $stmt->execute();
+        $response = $stmt->get_result();
 
-        if ($result === false) {
+        $result = [];
+        while ($row = $response->fetch_assoc()) {
+            $result[] = $row;
+        }
+
+        return $result;
+    }
+
+    // Filtrar por "transaction_type" 
+    public function getByType($type)
+    {
+        $filterByTypeSql = "SELECT * FROM transactions WHERE transaction_type = ? ORDER BY transaction_type, transaction_name";
+        $stmt = $this->connection->prepare($filterByTypeSql);
+
+        if ($stmt === false) {
             return [
                 "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
+                "message" => "Error al preparar la consulta: " . $this->connection->error
             ];
         }
 
-        return [
-            "result" => "OK",
-            "message" => "La transacción ha sido eliminada"
-        ];
+        $stmt->bind_param("s", $type);
+        $stmt->execute();
+        $response = $stmt->get_result();
+
+        $transactions = [];
+        while ($row = $response->fetch_assoc()) {
+            $transactions[] = $row;
+        }
+
+        return $transactions;
+    }
+
+    // Filtrar por fechas 
+    public function getByDate($date)
+    {
+        $filterByDateSql = "SELECT * FROM transactions WHERE transaction_date = ?";
+        $stmt = $this->connection->prepare($filterByDateSql);
+
+        if ($stmt === false) {
+            return [
+                "result" => "Error",
+                "message" => "Error al preparar la consulta: " . $this->connection->error
+            ];
+        }
+
+        $stmt->bind_param("s", $date);
+        $stmt->execute();
+        $response = $stmt->get_result();
+
+        $transactions = [];
+        while ($row = $response->fetch_assoc()) {
+            $transactions[] = $row;
+        }
+
+        return $transactions;
     }
 
     // Método ADD 
@@ -246,16 +283,11 @@ class Transaction
         ];
     }
 
-    // MÉTODO FILTRAR
-    public function getByName($value)
+    // MÉTODO DELETE 
+    public function delete($id)
     {
-        $filterSql = "SELECT trans.*, cat.category_name AS category_name
-            FROM transactions trans
-            INNER JOIN categories cat ON trans.fo_category = cat.id_category
-            WHERE trans.transaction_name LIKE ?";
-
-        // Preparamos la consulta
-        $stmt = $this->connection->prepare($filterSql);
+        $deleteSql = "DELETE FROM transactions WHERE id_transaction = ?";
+        $stmt = $this->connection->prepare($deleteSql);
 
         if ($stmt === false) {
             return [
@@ -264,83 +296,19 @@ class Transaction
             ];
         }
 
-        // Usamos parámetros preparados para evitar inyección SQL
-        $searchValue = "%{$value}%";
-        $stmt->bind_param("s", $searchValue);
-        $stmt->execute();
-        $response = $stmt->get_result();
+        $stmt->bind_param("i", $id);
+        $result = $stmt->execute();
 
-        $result = [];
-        while ($row = $response->fetch_assoc()) {
-            $result[] = $row;
-        }
-
-        return $result;
-    }
-
-    // Filtrar por "transaction_type" 
-    public function getByType($type)
-    {
-        $filterByTypeSql = "SELECT trans.*, cat.category_name AS category_name, sub.subcategory_name AS subcategory_name, rose.rose_type_name AS rose_type_name
-        FROM transactions trans
-        INNER JOIN categories cat ON trans.fo_category = cat.id_category
-        LEFT JOIN subcategories sub ON trans.fo_subcategory = sub.id_subcategory
-        LEFT JOIN rose_types rose ON trans.fo_rose_type = rose.id_rose_type
-        WHERE trans.transaction_type = ?";
-
-        $stmt = $this->connection->prepare($filterByTypeSql);
-
-        if ($stmt === false) {
+        if ($result === false) {
             return [
                 "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
+                "message" => "Error al ejecutar la consulta: " . $stmt->error
             ];
         }
 
-        $stmt->bind_param("s", $type);
-        $stmt->execute();
-        $response = $stmt->get_result();
-
-        $transactions = [];
-        while ($row = $response->fetch_assoc()) {
-            $transactions[] = $row;
-        }
-
-        return $transactions;
+        return [
+            "result" => "OK",
+            "message" => "La transacción ha sido eliminada"
+        ];
     }
-
-
-    // Filtrar por fechas 
-    public function getByDate($date)
-    {
-        $filterByDateSql = "SELECT trans.*, cat.category_name AS category_name, sub.subcategory_name AS subcategory_name, rose.rose_type_name AS rose_type_name
-        FROM transactions trans
-        INNER JOIN categories cat ON trans.fo_category = cat.id_category
-        LEFT JOIN subcategories sub ON trans.fo_subcategory = sub.id_subcategory
-        LEFT JOIN rose_types rose ON trans.fo_rose_type = rose.id_rose_type
-        WHERE trans.transaction_date = ?";
-
-        $stmt = $this->connection->prepare($filterByDateSql);
-
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
-        }
-
-        $stmt->bind_param("s", $date);
-        $stmt->execute();
-        $response = $stmt->get_result();
-
-        $transactions = [];
-        while ($row = $response->fetch_assoc()) {
-            $transactions[] = $row;
-        }
-
-        return $transactions;
-    }
-
-
 }
-?>

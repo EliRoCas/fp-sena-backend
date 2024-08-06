@@ -10,17 +10,9 @@ class Users
     // MÉTODO GET para consultar todos los usuarios con sus roles y tipos de documento
     public function getAll()
     {
-        //Se establece la consulta utilizando inner join y left join para asegurar todos los campos requeridos. 
-        // Además, se utiliza el 'GROUP_CONCAT' para combinar todos los roles asociados a un usuario en una sola col. 
-        $getAllSql = "SELECT u.*, doc.document_type_name, GROUP_CONCAT(uRol.role_name SEPARATOR ', ') AS roles
-            FROM users u
-            INNER JOIN document_types doc ON u.fo_document_type = doc.id_document_type
-            LEFT JOIN user_roles_assignments uRolAss ON u.id_user = uRolAss.fo_user
-            LEFT JOIN user_roles uRol ON uRolAss.fo_user_role = uRol.id_user_role
-            GROUP BY u.id_user
-            ORDER BY u.user_name";
-
+        $getAllSql = "SELECT * FROM users ORDER BY user_name";
         $response = mysqli_query($this->connection, $getAllSql);
+
         $users = [];
 
         while ($row = mysqli_fetch_assoc($response)) {
@@ -33,14 +25,7 @@ class Users
     // Método GET para consultar un usuario por ID
     public function getById($id)
     {
-        $getByIdSql = "SELECT u.*, doc.document_type_name, GROUP_CONCAT(uRol.role_name SEPARATOR ', ') AS roles
-            FROM users u
-            INNER JOIN document_types doc ON u.fo_document_type = doc.id_document_type
-            LEFT JOIN user_roles_assignments uRolAss ON u.id_user = uRolAss.fo_user
-            LEFT JOIN user_roles uRol ON uRolAss.fo_user_role = uRol.id_user_role
-            WHERE u.id_user = ?
-            GROUP BY u.id_user";
-
+        $getByIdSql = "SELECT * FROM users  WHERE id_user = ?";
         $stmt = $this->connection->prepare($getByIdSql);
         if ($stmt === false) {
             return [
@@ -52,9 +37,9 @@ class Users
         // Se vincula el parámetro '$id' a la consulta
         $stmt->bind_param("i", $id);
         $stmt->execute();
-        $res = $stmt->get_result();
+        $response = $stmt->get_result();
 
-        $user = $res->fetch_assoc();
+        $user = $response->fetch_assoc();
 
         if (!$user) {
             return [
@@ -66,34 +51,30 @@ class Users
         return $user;
     }
 
-    // MÉTODO DELETE 
-    public function delete($id)
+    // MÉTODO FILTRAR
+    public function filterByName($value)
     {
-        $deleteSql = "DELETE FROM users WHERE  id_user = ?";
-        $stmt = $this->connection->prepare($deleteSql);
-
+        $filterSql = "SELECT * FROM users WHERE user_name LIKE ? GROUP BY id_user";
+        $stmt = $this->connection->prepare($filterSql);
         if ($stmt === false) {
             return [
                 "result" => "Error",
-                "message" => "Error al preparar la consulta" . $this->connection->error,
+                "message" => "Error al preparar la consulta: " . $this->connection->error
             ];
         }
-        $stmt->bind_param("i", $id);
-        $result = $stmt->execute();
+        // Se vincula el parámetro '$value' a la consulta
+        $likeValue = "%$value%";
+        $stmt->bind_param("s", $likeValue);
+        $stmt->execute();
+        $response = $stmt->get_result();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta" . $this->connection->error,
-            ];
+        $users = [];
+        while ($row = $response->fetch_assoc()) {
+            $users[] = $row;
         }
 
-        return [
-            "result" => "Ok",
-            "message" => "El usuario ha sido eliminado",
-        ];
+        return $users;
     }
-
 
     // MÉTODO ADD
     public function add($params)
@@ -111,15 +92,15 @@ class Users
         $hashedPassword = password_hash($params["password"], PASSWORD_BCRYPT);
 
         $insertSql = "INSERT INTO users (
-        user_name, 
-        user_lastname, 
-        fo_document_type, 
-        document_number, 
-        email, 
-        password) 
+            user_name, 
+            user_lastname, 
+            fo_document_type, 
+            document_number, 
+            email, 
+            password
+        ) 
         VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = $this->connection->prepare($insertSql);
-
         if ($stmt === false) {
             return [
                 "result" => "Error",
@@ -127,7 +108,7 @@ class Users
             ];
         }
 
-        $stmt->bind_param(
+        $stmt->bind_param (
             "ssiiss",
             $params["user_name"],
             $params["user_lastname"],
@@ -165,11 +146,9 @@ class Users
 
         $hashedPassword = password_hash($params["password"], PASSWORD_BCRYPT);
 
-
         $updatSql = "UPDATE users SET user_name = ?, user_lastname = ?, fo_document_type = ?, document_number = ?,
          email = ?, password = ? WHERE id_user = ?";
         $stmt = $this->connection->prepare($updatSql);
-
         if ($stmt === false) {
             return [
                 "result" => "Error",
@@ -201,38 +180,31 @@ class Users
         ];
     }
 
-    // MÉTODO FILTRAR
-    public function filterByName($value)
+    // MÉTODO DELETE 
+    public function delete($id)
     {
-        $filterSql = "SELECT u.*, doc.document_type_name, GROUP_CONCAT(uRol.role_name SEPARATOR ', ') AS roles
-            FROM users u
-            INNER JOIN document_types doc ON u.fo_document_type = doc.id_document_type
-            LEFT JOIN user_roles_assignments uRolAss ON u.id_user = uRolAss.fo_user
-            LEFT JOIN user_roles uRol ON uRolAss.fo_user_role = uRol.id_user_role
-            WHERE u.user_name LIKE ?
-            GROUP BY u.id_user";
-
-        $stmt = $this->connection->prepare($filterSql);
+        $deleteSql = "DELETE FROM users WHERE  id_user = ?";
+        $stmt = $this->connection->prepare($deleteSql);
         if ($stmt === false) {
             return [
                 "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
+                "message" => "Error al preparar la consulta" . $this->connection->error,
+            ];
+        }
+        $stmt->bind_param("i", $id);
+        $result = $stmt->execute();
+
+        if ($result === false) {
+            return [
+                "result" => "Error",
+                "message" => "Error al ejecutar la consulta" . $this->connection->error,
             ];
         }
 
-        // Se vincula el parámetro '$value' a la consulta
-        $likeValue = "%$value%";
-        $stmt->bind_param("s", $likeValue);
-        $stmt->execute();
-        $response = $stmt->get_result();
-
-        $users = [];
-        while ($row = $response->fetch_assoc()) {
-            $users[] = $row;
-        }
-
-        return $users;
-
+        return [
+            "result" => "Ok",
+            "message" => "El usuario ha sido eliminado",
+        ];
     }
+
 }
-?>

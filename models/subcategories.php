@@ -13,16 +13,10 @@ class Subcategory
     // Método para consultar todas las subcategorías
     public function getAll()
     {
-        $getAllSql = "SELECT subcat.*, cat.id_category, cat.category_name AS category_name
-          FROM subcategories subcat
-          LEFT JOIN categories cat ON subcat.fo_category = cat.id_category
-                 ORDER BY subcat.id_subcategory";
-
+        $getAllSql = "SELECT * FROM subcategories ORDER BY subcategory_name";
         //Se prepara la consulta con una conexión a la DB 
         //la variable $stmt es una instancia de la clase "mysqli_stmt" para sentencias SQL preparadas
         $stmt = $this->connection->prepare($getAllSql);
-
-        // Verificar si la preparación fue exitosa
         if ($stmt === false) {
             return [
                 "result" => "Error",
@@ -50,7 +44,6 @@ class Subcategory
     {
         $getById = "SELECT * FROM subcategories WHERE id_subcategory = ?";
         $stmt = $this->connection->prepare($getById);
-
         if ($stmt === false) {
             return [
                 "result" => "Error",
@@ -72,6 +65,40 @@ class Subcategory
         }
 
         return $subcategory;
+    }
+
+    // Método para filtrar por un valor/nombre en particular
+    public function getByName($value)
+    {
+        // Se crea la consulta SQL para seleccionar todas las filas de la tabla donde el nombre contenga el
+        // valor dado en '$value'. Se incluye (%) para indicar que cualquier dato puede estar antes o después del valor
+        $filterSql = "SELECT * FROM subcategories WHERE subcategory_name LIKE ?";
+
+        // Preparamos la consulta
+        $stmt = $this->connection->prepare($filterSql);
+
+        if ($stmt === false) {
+            return [
+                "result" => "Error",
+                "message" => "Error al preparar la consulta: " . $this->connection->error
+            ];
+        }
+        // Usamos parámetros preparados para evitar inyección SQL
+        // Se incluye (%) para indicar que cualquier dato puede estar antes o después del valor
+        $searchValue = "%{$value}%";
+        $stmt->bind_param("s", $searchValue);
+
+        // Ejecutamos la consulta
+        $stmt->execute();
+        $response = $stmt->get_result();
+
+        // Recogemos los resultados
+        $results = [];
+        while ($row = $response->fetch_assoc()) {
+            $results[] = $row;
+        }
+
+        return $results;
     }
 
 
@@ -195,38 +222,4 @@ class Subcategory
         ];
     }
 
-    // Método para filtrar por un valor/nombre en particular
-    public function getByName($value)
-    {
-        // Se crea la consulta SQL para seleccionar todas las filas de la tabla donde el nombre contenga el
-        // valor dado en '$value'. Se incluye (%) para indicar que cualquier dato puede estar antes o después del valor
-        $filterSql = "SELECT * FROM subcategories WHERE subcategory_name LIKE ?";
-
-        // Preparamos la consulta
-        $stmt = $this->connection->prepare($filterSql);
-
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
-        }
-        // Usamos parámetros preparados para evitar inyección SQL
-        // Se incluye (%) para indicar que cualquier dato puede estar antes o después del valor
-        $searchValue = "%{$value}%";
-        $stmt->bind_param("s", $searchValue);
-
-        // Ejecutamos la consulta
-        $stmt->execute();
-        $response = $stmt->get_result();
-
-        // Recogemos los resultados
-        $results = [];
-        while ($row = $response->fetch_assoc()) {
-            $results[] = $row;
-        }
-
-        return $results;
-    }
 }
-?>

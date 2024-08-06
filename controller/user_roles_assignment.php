@@ -22,8 +22,8 @@ switch ($requestMethod) {
 
     // Se consulta un rol de usuario 
     case 'GET':
-        if (isset($_GET['id_user'])) {
-            $id_user = $_GET['id_user'];
+        if (isset($_GET['id'])) {
+            $id_user = $_GET['id'];
             $response = $userRoleAssignment->getUserRoles($id_user);
         } else {
             $response = $userRoleAssignment->getAll();
@@ -33,7 +33,7 @@ switch ($requestMethod) {
     case 'POST':
         $input = json_decode(file_get_contents('php://input'), true);
         $id_user = $input["fo_user"];
-        $id_role = $input["id_user_role"];
+        $id_role = $input["fo_user_role"];
 
         if ($id_user && $id_role) {
             $response = $userRoleAssignment->assignUserRole($id_user, $id_role);

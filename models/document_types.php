@@ -50,34 +50,37 @@ class DocumentType
         return $d_types;
     }
 
-    //MÉTODO DELETE 
-    public function delete($id)
+    // Método para Filtrar 
+    public function getByName($value)
     {
-        $delete = "DELETE FROM document_types WHERE id_document_type = ?";
-        $stmt = $this->connection->prepare($delete);
+        $filter = "SELECT * FROM document_types WHERE document_type_name LIKE ?";
+        $stmt = $this->connection->prepare($filter);
 
         if ($stmt === false) {
             return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
+                'result' => 'Error',
+                'message' => 'Error al preparar la consulta: ' . $this->connection->error
             ];
         }
 
-        // Se vincula el parámetro '$id' a la consulta, utilizando el método bind_param para asegurar el formato de la data (i)
-        $stmt->bind_param("i", $id);
-        $result = $stmt->execute();
+        $value = "%$value%";
+        $stmt->bind_param("s", $value);
+        $stmt->execute();
+        $res = $stmt->get_result();
 
-        if ($result === false) {
+        if ($res === false) {
             return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
+                'result' => 'Error',
+                'message' => 'Error al ejecutar la consulta: ' . $stmt->error
             ];
         }
 
-        return [
-            "result" => "OK",
-            "message" => "Se ha eliminado el tipo de documento"
-        ];
+        $d_types = [];
+        while ($row = $res->fetch_assoc()) {
+            $d_types[] = $row;
+        }
+
+        return $d_types;
     }
 
     // Método ADD 
@@ -151,39 +154,34 @@ class DocumentType
         ];
     }
 
-    // Método para Filtrar 
-    public function getByName($value)
+    //MÉTODO DELETE 
+    public function delete($id)
     {
-        $filter = "SELECT * FROM document_types WHERE document_type_name LIKE ?";
-        $stmt = $this->connection->prepare($filter);
+        $delete = "DELETE FROM document_types WHERE id_document_type = ?";
+        $stmt = $this->connection->prepare($delete);
 
         if ($stmt === false) {
             return [
-                'result' => 'Error',
-                'message' => 'Error al preparar la consulta: ' . $this->connection->error
+                "result" => "Error",
+                "message" => "Error al preparar la consulta: " . $this->connection->error
             ];
         }
 
-        $value = "%$value%";
-        $stmt->bind_param("s", $value);
-        $stmt->execute();
-        $res = $stmt->get_result();
+        // Se vincula el parámetro '$id' a la consulta, utilizando el método bind_param para asegurar el formato de la data (i)
+        $stmt->bind_param("i", $id);
+        $result = $stmt->execute();
 
-        if ($res === false) {
+        if ($result === false) {
             return [
-                'result' => 'Error',
-                'message' => 'Error al ejecutar la consulta: ' . $stmt->error
+                "result" => "Error",
+                "message" => "Error al ejecutar la consulta: " . $stmt->error
             ];
         }
 
-        $d_types = [];
-        while ($row = $res->fetch_assoc()) {
-            $d_types[] = $row;
-        }
-
-        return $d_types;
+        return [
+            "result" => "OK",
+            "message" => "Se ha eliminado el tipo de documento"
+        ];
     }
 
 }
-
-?>

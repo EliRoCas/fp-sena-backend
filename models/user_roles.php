@@ -51,35 +51,37 @@ class UserRole
         return $role;
     }
 
-
-    // MÉTODO DELETE 
-    public function delete($id)
+    // Método para Filtrar 
+    public function getByName($value)
     {
-        $deleteSql = "DELETE FROM user_roles WHERE id_user_role = ?";
-        $stmt = $this->connection->prepare($deleteSql);
+        $filterByNameSql = "SELECT * FROM user_roles WHERE role_name LIKE ? ORDER BY role_name";
+        $stmt = $this->connection->prepare($filterByNameSql);
 
         if ($stmt === false) {
             return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
+                'result' => 'Error',
+                'message' => 'Error al preparar la consulta: ' . $this->connection->error
             ];
         }
 
-        // Se vincula el parámetro '$id' a la consulta, utilizando el método bind_param para asegurar el formato de la data (i)
-        $stmt->bind_param("i", $id);
-        $result = $stmt->execute();
+        $value = "%$value%";
+        $stmt->bind_param("s", $value);
+        $stmt->execute();
+        $response = $stmt->get_result();
 
-        if ($result === false) {
+        if ($response === false) {
             return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
+                'result' => 'Error',
+                'message' => 'Error al ejecutar la consulta: ' . $stmt->error
             ];
         }
 
-        return [
-            "result" => "OK",
-            "message" => "El rol ha sido eliminado"
-        ];
+        $roles = [];
+        while ($row = $response->fetch_assoc()) {
+            $roles[] = $row;
+        }
+
+        return $roles;
     }
 
     // Método ADD 
@@ -153,38 +155,33 @@ class UserRole
         ];
     }
 
-    // Método para Filtrar 
-    public function getByName($value)
+    // MÉTODO DELETE 
+    public function delete($id)
     {
-        $filterByNameSql = "SELECT * FROM user_roles WHERE role_name LIKE ?";
-        $stmt = $this->connection->prepare($filterByNameSql);
+        $deleteSql = "DELETE FROM user_roles WHERE id_user_role = ?";
+        $stmt = $this->connection->prepare($deleteSql);
 
         if ($stmt === false) {
             return [
-                'result' => 'Error',
-                'message' => 'Error al preparar la consulta: ' . $this->connection->error
+                "result" => "Error",
+                "message" => "Error al preparar la consulta: " . $this->connection->error
             ];
         }
 
-        $value = "%$value%";
-        $stmt->bind_param("s", $value);
-        $stmt->execute();
-        $response = $stmt->get_result();
+        // Se vincula el parámetro '$id' a la consulta, utilizando el método bind_param para asegurar el formato de la data (i)
+        $stmt->bind_param("i", $id);
+        $result = $stmt->execute();
 
-        if ($response === false) {
+        if ($result === false) {
             return [
-                'result' => 'Error',
-                'message' => 'Error al ejecutar la consulta: ' . $stmt->error
+                "result" => "Error",
+                "message" => "Error al ejecutar la consulta: " . $stmt->error
             ];
         }
 
-        $roles = [];
-        while ($row = $response->fetch_assoc()) {
-            $roles[] = $row;
-        }
-
-        return $roles;
+        return [
+            "result" => "OK",
+            "message" => "El rol ha sido eliminado"
+        ];
     }
-
 }
-?>

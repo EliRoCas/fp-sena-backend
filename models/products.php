@@ -8,14 +8,11 @@ class Product
         $this->connection = $connection;
     }
 
+
     // Método GET para consultar todos los productos con sus categorías 
     public function getAll()
     {
-        $getAllSql = "SELECT p.*, cat.category_name AS categories
-        FROM products p 
-        INNER JOIN categories cat ON p.fo_category = cat.id_category
-        ORDER BY id_product";
-
+        $getAllSql = "SELECT * FROM products ORDER BY id_product";
         $response = mysqli_query($this->connection, $getAllSql);
         $products = [];
 
@@ -28,11 +25,7 @@ class Product
     // Método GET para consultar un producto por ID con sus categorías 
     public function getById($id)
     {
-        $getByIdSql = "SELECT p.*, cat.category_name AS category
-            FROM products p
-            INNER JOIN categories cat ON p.fo_category = cat.id_category
-            WHERE p.id_product = ?
-            ORDER BY p.product_name";
+        $getByIdSql = "SELECT * FROM products WHERE id_product = ?";
 
         $stmt = $this->connection->prepare($getByIdSql);
         if ($stmt === false) {
@@ -58,12 +51,12 @@ class Product
         return $product;
     }
 
-    // Método DELETE para eliminar un producto
-    public function delete($id)
+    // MÉTODO FILTRAR para consultar productos por nombre, tipo o categoría
+    public function getByName($value)
     {
-        $deleteSql = "DELETE FROM products WHERE id_product = ?";
-        $stmt = $this->connection->prepare($deleteSql);
+        $filterSql = "SELECT * FROM products WHERE product_name LIKE ? ORDER BY product_name";
 
+        $stmt = $this->connection->prepare($filterSql);
         if ($stmt === false) {
             return [
                 "result" => "Error",
@@ -71,20 +64,18 @@ class Product
             ];
         }
 
-        $stmt->bind_param("i", $id);
-        $result = $stmt->execute();
+        // Se prepara el valor para los filtros de búsqueda
+        $likeValue = "%$value%";
+        $stmt->bind_param("s", $likeValue);
+        $stmt->execute();
+        $response = $stmt->get_result();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        $products = [];
+        while ($row = $response->fetch_assoc()) {
+            $products[] = $row;
         }
 
-        return [
-            "result" => "OK",
-            "message" => "Producto eliminado correctamente"
-        ];
+        return $products;
     }
 
     // Método ADD para agregar un nuevo producto
@@ -101,12 +92,14 @@ class Product
             ];
         }
 
-        $insertSql = "INSERT INTO products (product_name, 
+        $insertSql = "INSERT INTO products (
+            product_name, 
             fo_subcategory, 
             product_img, 
             product_description, 
             quantity, 
-            fo_category) 
+            fo_category
+            ) 
         VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = $this->connection->prepare($insertSql);
 
@@ -212,19 +205,12 @@ class Product
         ];
     }
 
-    // MÉTODO FILTRAR para consultar productos por nombre, tipo o categoría
-    public function getByName($value)
+    // Método DELETE para eliminar un producto
+    public function delete($id)
     {
-        $filterSql = "SELECT p.*, cat.category_name AS category, sub.subcategory_name AS subcategory
-            FROM products p
-            INNER JOIN categories cat ON p.fo_category = cat.id_category
-            INNER JOIN subcategories sub ON p.fo_subcategory = sub.id_subcategory
-            WHERE p.product_name LIKE ? 
-               OR sub.subcategory_name LIKE ? 
-               OR cat.category_name LIKE ?
-            ORDER BY p.product_name";
+        $deleteSql = "DELETE FROM products WHERE id_product = ?";
+        $stmt = $this->connection->prepare($deleteSql);
 
-        $stmt = $this->connection->prepare($filterSql);
         if ($stmt === false) {
             return [
                 "result" => "Error",
@@ -232,19 +218,21 @@ class Product
             ];
         }
 
-        // Se prepara el valor para los filtros de búsqueda
-        $likeValue = "%$value%";
-        $stmt->bind_param("sss", $likeValue, $likeValue, $likeValue);
-        $stmt->execute();
-        $response = $stmt->get_result();
+        $stmt->bind_param("i", $id);
+        $result = $stmt->execute();
 
-        $products = [];
-        while ($row = $response->fetch_assoc()) {
-            $products[] = $row;
+        if ($result === false) {
+            return [
+                "result" => "Error",
+                "message" => "Error al ejecutar la consulta: " . $stmt->error
+            ];
         }
 
-        return $products;
+        return [
+            "result" => "OK",
+            "message" => "Producto eliminado correctamente"
+        ];
     }
+
 }
 
-?>

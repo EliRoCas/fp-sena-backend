@@ -50,34 +50,37 @@ class RoseType
         return $r_types;
     }
 
-    //MÉTODO DELETE 
-    public function delete($id)
+    // Método para Filtrar 
+    public function getByName($value)
     {
-        $delete = "DELETE FROM rose_types WHERE id_rose_type = ?";
-        $stmt = $this->connection->prepare($delete);
+        $filter = "SELECT * FROM rose_types WHERE rose_type_name LIKE ?";
+        $stmt = $this->connection->prepare($filter);
 
         if ($stmt === false) {
             return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
+                'result' => 'Error',
+                'message' => 'Error al preparar la consulta: ' . $this->connection->error
             ];
         }
 
-        // Se vincula el parámetro '$id' a la consulta, utilizando el método bind_param para asegurar el formato de la data (i)
-        $stmt->bind_param("i", $id);
-        $result = $stmt->execute();
+        $value = "%$value%";
+        $stmt->bind_param("s", $value);
+        $stmt->execute();
+        $response = $stmt->get_result();
 
-        if ($result === false) {
+        if ($response === false) {
             return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
+                'result' => 'Error',
+                'message' => 'Error al ejecutar la consulta: ' . $stmt->error
             ];
         }
 
-        return [
-            "result" => "OK",
-            "message" => "Se ha eliminado el tipo rosa"
-        ];
+        $r_types = [];
+        while ($row = $response->fetch_assoc()) {
+            $r_types[] = $row;
+        }
+
+        return $r_types;
     }
 
     // Método ADD 
@@ -151,39 +154,34 @@ class RoseType
         ];
     }
 
-    // Método para Filtrar 
-    public function getByName($value)
+    //MÉTODO DELETE 
+    public function delete($id)
     {
-        $filter = "SELECT * FROM rose_types WHERE rose_type_name LIKE ?";
-        $stmt = $this->connection->prepare($filter);
+        $delete = "DELETE FROM rose_types WHERE id_rose_type = ?";
+        $stmt = $this->connection->prepare($delete);
 
         if ($stmt === false) {
             return [
-                'result' => 'Error',
-                'message' => 'Error al preparar la consulta: ' . $this->connection->error
+                "result" => "Error",
+                "message" => "Error al preparar la consulta: " . $this->connection->error
             ];
         }
 
-        $value = "%$value%";
-        $stmt->bind_param("s", $value);
-        $stmt->execute();
-        $response = $stmt->get_result();
+        // Se vincula el parámetro '$id' a la consulta, utilizando el método bind_param para asegurar el formato de la data (i)
+        $stmt->bind_param("i", $id);
+        $result = $stmt->execute();
 
-        if ($response === false) {
+        if ($result === false) {
             return [
-                'result' => 'Error',
-                'message' => 'Error al ejecutar la consulta: ' . $stmt->error
+                "result" => "Error",
+                "message" => "Error al ejecutar la consulta: " . $stmt->error
             ];
         }
 
-        $r_types = [];
-        while ($row = $response->fetch_assoc()) {
-            $r_types[] = $row;
-        }
-
-        return $r_types;
+        return [
+            "result" => "OK",
+            "message" => "Se ha eliminado el tipo rosa"
+        ];
     }
 
 }
-
-?>

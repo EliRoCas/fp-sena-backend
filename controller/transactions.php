@@ -2,7 +2,7 @@
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS');
 header('Content-Type: application/json');
 
 require_once '../db_connect.php';
@@ -16,6 +16,7 @@ switch ($requestMethod) {
 
     case 'OPTIONS':
         http_response_code(200);
+        exit;
 
     case 'GET':
         if (isset($_GET['id'])) {

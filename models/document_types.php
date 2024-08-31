@@ -28,11 +28,12 @@ class DocumentType
         $getById = "SELECT * FROM document_types WHERE id_document_type = ? ";
         $stmt = $this->connection->prepare($getById);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consula: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            // return [
+            //     "result" => "Error",
+            //     "message" => "Error al preparar la consula: " . $this->connection->error
+            // ];
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
         $stmt->bind_param("s", $id);
@@ -41,10 +42,11 @@ class DocumentType
         $d_types = $res->fetch_assoc();
 
         if (!$d_types) {
-            return [
-                "result" => "Error",
-                "message" => "Tipo de documento no encontrado"
-            ];
+            // return [
+            //     "result" => "Error",
+            //     "message" => "Tipo de documento no encontrado"
+            // ];
+            throw new Exception("Tipo de Documento no encontrado");
         }
 
         return $d_types;
@@ -56,11 +58,12 @@ class DocumentType
         $filter = "SELECT * FROM document_types WHERE document_type_name LIKE ?";
         $stmt = $this->connection->prepare($filter);
 
-        if ($stmt === false) {
-            return [
-                'result' => 'Error',
-                'message' => 'Error al preparar la consulta: ' . $this->connection->error
-            ];
+        if (!$stmt) {
+            // return [
+            //     'result' => 'Error',
+            //     'message' => 'Error al preparar la consulta: ' . $this->connection->error
+            // ];
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
         $value = "%$value%";
@@ -68,11 +71,12 @@ class DocumentType
         $stmt->execute();
         $res = $stmt->get_result();
 
-        if ($res === false) {
-            return [
-                'result' => 'Error',
-                'message' => 'Error al ejecutar la consulta: ' . $stmt->error
-            ];
+        if (!$res) {
+            // return [
+            //     'result' => 'Error',
+            //     'message' => 'Error al ejecutar la consulta: ' . $stmt->error
+            // ];
+            throw new Exception("Execute: " . $stmt->error);
         }
 
         $d_types = [];
@@ -92,19 +96,17 @@ class DocumentType
             //     "message" => "Todos los campos son requeridos"
             // ];
             throw new Exception("Todos los campos son requeridos");
-
         }
 
         $post = "INSERT INTO document_types (id_document_type, document_type_name) VALUES (?, ?)";
         $stmt = $this->connection->prepare($post);
 
-        if (!$stmt ) {
+        if (!$stmt) {
             // return [
             //     "result" => "Error",
             //     "message" => "Error al preparar la consulta: " . $this->connection->error
             // ];
-            throw new Exception("prepare: " . $this->connection->error);
-
+            throw new Exception("Prepare: " . $this->connection->error);
         }
 
         $stmt->bind_param("ss", $params["id_document_type"], $params["document_type_name"]);
@@ -115,78 +117,87 @@ class DocumentType
             //     "result" => "Error",
             //     "message" => "Error al ejecutar la consulta: " . $stmt->error
             // ];
-            throw new Exception("execute: " . $stmt->error);
+            throw new Exception("Excecute: " . $stmt->error);
         }
 
-        return [
-            "result" => "OK",
-            "message" => "Se ha agregado el tipo de documento"
-        ];
+        // Se omite el mensaje para mejorar la seguridad de la app
+        // return [
+        //     "result" => "OK",
+        //     "message" => "Se ha agregado el tipo de documento"
+        // ];
     }
 
     // MÉTODO para editar 
     public function update($id, $params)
     {
-        if (!isset($params["document_type_name"])) {
-            return [
-                "result" => "Error",
-                "message" => "Todos los campos son requeridos"
-            ];
+        if (!isset($params["document_type_name"]) || !isset($id)) {
+            // return [
+            //     "result" => "Error",
+            //     "message" => "Todos los campos son requeridos"
+            // ];
+            throw new Exception("Todos los campos son requeridos");
         }
 
         $patch = "UPDATE document_types SET document_type_name = ? WHERE id_document_type = ?";
         $stmt = $this->connection->prepare($patch);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            // return [
+            //     "result" => "Error",
+            //     "message" => "Error al preparar la consulta: " . $this->connection->error
+            // ];
+            throw new Exception("Prepare: " . $this->connection->error);
         }
 
-        $stmt->bind_param("ss", $params["document_type_name"], $id);
+        $stmt->bind_param("ss", $id, $params["document_type_name"],);
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            // return [
+            //     "result" => "Error",
+            //     "message" => "Error al ejecutar la consulta: " . $stmt->error
+            // ];
+            throw new Exception("Excecute: " . $stmt->error);
         }
-        return [
-            "result" => "OK",
-            "message" => "Se ha actualiza el tipo de documentodo con éxito"
-        ];
+        // return [
+        //     "result" => "OK",
+        //     "message" => "Se ha actualiza el tipo de documentodo con éxito"
+        // ];
     }
 
     //MÉTODO DELETE 
     public function delete($id)
     {
-        $delete = "DELETE FROM document_types WHERE id_document_type = ?";
-        $stmt = $this->connection->prepare($delete);
+        $deleteSql = "DELETE FROM document_types WHERE id_document_type = ?";
+        $stmt = $this->connection->prepare($deleteSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            // return [
+            //     "result" => "Error",
+            //     "message" => "Error al preparar la consulta: " . $this->connection->error
+            // ];
+            throw new Exception("Prepare: " . $this->connection->error);
         }
 
         // Se vincula el parámetro '$id' a la consulta, utilizando el método bind_param para asegurar el formato de la data (i)
         $stmt->bind_param("s", $id);
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            // return [
+            //     "result" => "Error",
+            //     "message" => "Error al ejecutar la consulta: " . $stmt->error
+            // ]
+            throw new Exception("Excecute: " . $stmt->error);
         }
 
-        return [
-            "result" => "OK",
-            "message" => "Se ha eliminado el tipo de documento"
-        ];
-    }
+        if ($stmt->affected_rows === 0) {
+            return false; 
+        }
 
+        // return [
+        //     "result" => "OK",
+        //     "message" => "Se ha eliminado el tipo de documento"
+        // ];
+    }
 }

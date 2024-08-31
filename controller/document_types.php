@@ -13,9 +13,11 @@ $documentType = new DocumentType($connection);
 $requestMethod = $_SERVER['REQUEST_METHOD'];
 $controller = $_GET['controller'] ?? '';
 
+try{
 switch ($requestMethod) {
     case 'OPTIONS':
         http_response_code(200);
+        break;
 
     case 'GET':
         if (isset($_GET['id'])) {
@@ -32,9 +34,11 @@ switch ($requestMethod) {
         }
         break;
     case 'POST':
-        $input = json_decode(file_get_contents('php://input'), true);
-        http_response_code(201);
-        $response = $documentType->add($input);
+        
+            $input = json_decode(file_get_contents('php://input'), true);
+            $response = $documentType->add($input);
+            http_response_code(201);
+        
         break;
 
     case 'PUT':
@@ -78,5 +82,10 @@ switch ($requestMethod) {
 }
 
 echo json_encode($response);
+}catch(Exception $e){
+    echo $e->getMessage();
+    http_response_code(500);
+}
+
 
 ?>

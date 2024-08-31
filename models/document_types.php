@@ -35,7 +35,7 @@ class DocumentType
             ];
         }
 
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("s", $id);
         $stmt->execute();
         $res = $stmt->get_result();
         $d_types = $res->fetch_assoc();
@@ -86,31 +86,36 @@ class DocumentType
     // Método ADD 
     public function add($params)
     {
-        if (!isset($params["document_type_name"])) {
-            return [
-                "result" => "Error",
-                "message" => "Todos los campos son requeridos"
-            ];
+        if (!isset($params["document_type_name"]) || !isset($params["id_document_type"])) {
+            // return [
+            //     "result" => "Error",
+            //     "message" => "Todos los campos son requeridos"
+            // ];
+            throw new Exception("Todos los campos son requeridos");
+
         }
 
-        $post = "INSERT INTO document_types (document_type_name) VALUES (?)";
+        $post = "INSERT INTO document_types (id_document_type, document_type_name) VALUES (?, ?)";
         $stmt = $this->connection->prepare($post);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt ) {
+            // return [
+            //     "result" => "Error",
+            //     "message" => "Error al preparar la consulta: " . $this->connection->error
+            // ];
+            throw new Exception("prepare: " . $this->connection->error);
+
         }
 
-        $stmt->bind_param("s", $params["document_type_name"]);
+        $stmt->bind_param("ss", $params["id_document_type"], $params["document_type_name"]);
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            // return [
+            //     "result" => "Error",
+            //     "message" => "Error al ejecutar la consulta: " . $stmt->error
+            // ];
+            throw new Exception("execute: " . $stmt->error);
         }
 
         return [
@@ -139,7 +144,7 @@ class DocumentType
             ];
         }
 
-        $stmt->bind_param("si", $params["document_type_name"], $id);
+        $stmt->bind_param("ss", $params["document_type_name"], $id);
         $result = $stmt->execute();
 
         if ($result === false) {
@@ -168,7 +173,7 @@ class DocumentType
         }
 
         // Se vincula el parámetro '$id' a la consulta, utilizando el método bind_param para asegurar el formato de la data (i)
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("s", $id);
         $result = $stmt->execute();
 
         if ($result === false) {

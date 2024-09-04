@@ -72,13 +72,8 @@ try {
                 // SE añade una validación para verificar si el ID está presente antes de proceder a ejecutar la solicitud. 
                 if ($id) {
                     $response = $documentType->update($id, $input);
-                    if ($response) {
-                        http_response_code(200);
-                        $response = ["message" => "Document type updated"];
-                    } else {
-                        http_response_code(404);
-                        $response = ["message" => "Document type not found"];
-                    }
+                    http_response_code(200);
+                    $response = ["message" => "Document type updated"];
                 } else {
                     http_response_code(400);
                     $response = [
@@ -106,11 +101,10 @@ try {
                     ];
                 }
             } catch (Exception $e) {
-                http_response_code(500); 
+                http_response_code(500);
                 $response = ["message" => "An error occurred: " . $e->getMessage()];
             };
             break;
-
 
         default:
             http_response_code(500);

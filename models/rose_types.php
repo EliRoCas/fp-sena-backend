@@ -11,8 +11,8 @@ class RoseType
     //MÉTODO GET para consultar todos los tipos de rosas
     public function getAll()
     {
-        $getAll = "SELECT * FROM rose_types ORDER BY rose_type_name";
-        $response = mysqli_query($this->connection, $getAll);
+        $getAllSql = "SELECT * FROM rose_types ORDER BY rose_type_name";
+        $response = mysqli_query($this->connection, $getAllSql);
         $r_types = [];
 
         while ($row = mysqli_fetch_assoc($response)) {
@@ -25,26 +25,20 @@ class RoseType
     // MÉTODO GET para consultar tipos de rosas por ID
     public function getById($id)
     {
-        $getById = "SELECT * FROM rose_types WHERE id_rose_type = ? ";
-        $stmt = $this->connection->prepare($getById);
+        $getByIdSql = "SELECT * FROM rose_types WHERE id_rose_type = ? ";
+        $stmt = $this->connection->prepare($getByIdSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consula: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("s", $id);
         $stmt->execute();
         $response = $stmt->get_result();
         $r_types = $response->fetch_assoc();
 
         if (!$r_types) {
-            return [
-                "result" => "Error",
-                "message" => "Tipo de rosa no encontrado"
-            ];
+            throw new Exception('Tipo de rosa no encontrado');
         }
 
         return $r_types;
@@ -53,14 +47,11 @@ class RoseType
     // Método para Filtrar 
     public function getByName($value)
     {
-        $filter = "SELECT * FROM rose_types WHERE rose_type_name LIKE ?";
-        $stmt = $this->connection->prepare($filter);
+        $filterSql = "SELECT * FROM rose_types WHERE rose_type_name LIKE ?";
+        $stmt = $this->connection->prepare($filterSql);
 
-        if ($stmt === false) {
-            return [
-                'result' => 'Error',
-                'message' => 'Error al preparar la consulta: ' . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
         $value = "%$value%";
@@ -68,11 +59,8 @@ class RoseType
         $stmt->execute();
         $response = $stmt->get_result();
 
-        if ($response === false) {
-            return [
-                'result' => 'Error',
-                'message' => 'Error al ejecutar la consulta: ' . $stmt->error
-            ];
+        if (!$response) {
+            throw new Exception("Execute: " . $stmt->error);
         }
 
         $r_types = [];
@@ -86,102 +74,77 @@ class RoseType
     // Método ADD 
     public function add($params)
     {
-        if (!isset($params["rose_type_name"])) {
-            return [
-                "result" => "Error",
-                "message" => "Todos los campos son requeridos"
-            ];
+        if (!isset($params["rose_type_name"]) || !isset($params["id_rose_type"])) {
+            throw new Exception("Todos los campos son requeridos");
         }
 
-        $post = "INSERT INTO rose_types (rose_type_name) VALUES (?)";
-        $stmt = $this->connection->prepare($post);
+        $postSql = "INSERT INTO rose_types (id_rose_type, rose_type_name) VALUES (?, ?)";
+        $stmt = $this->connection->prepare($postSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare" . $this->connection->error);
         }
 
-        $stmt->bind_param("s", $params["rose_type_name"]);
+        $stmt->bind_param("ss",  $params["id_rose_type"], $params["rose_type_name"]);
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            throw new Exception("Execute" . $stmt->error);
         }
 
-        return [
-            "result" => "OK",
-            "message" => "Se ha agregado el tipo de rosa"
-        ];
+        // return [
+        //     "result" => "OK",
+        //     "message" => "Se ha agregado el tipo de rosa"
+        // ];
     }
 
     // MÉTODO para editar 
     public function update($id, $params)
     {
         if (!isset($params["rose_type_name"])) {
-            return [
-                "result" => "Error",
-                "message" => "Todos los campos son requeridos"
-            ];
+            throw new Exception("Todos los campos son requeridos");
         }
 
-        $patch = "UPDATE rose_types SET rose_type_name = ? WHERE id_rose_type = ?";
-        $stmt = $this->connection->prepare($patch);
+        $patchSql = "UPDATE rose_types SET rose_type_name = ? WHERE id_rose_type = ?";
+        $stmt = $this->connection->prepare($patchSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare" . $this->connection->error);
         }
 
-        $stmt->bind_param("si", $params["rose_type_name"], $id);
+        $stmt->bind_param("ss", $params["rose_type_name"], $id);
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            throw new Exception("Execute" . $stmt->error);
         }
-        return [
-            "result" => "OK",
-            "message" => "Se ha actualiza el tipo de rosa con éxito"
-        ];
+        // return [
+        //     "result" => "OK",
+        //     "message" => "Se ha actualiza el tipo de rosa con éxito"
+        // ];
     }
 
     //MÉTODO DELETE 
     public function delete($id)
     {
-        $delete = "DELETE FROM rose_types WHERE id_rose_type = ?";
-        $stmt = $this->connection->prepare($delete);
+        $deleteSql = "DELETE FROM rose_types WHERE id_rose_type = ?";
+        $stmt = $this->connection->prepare($deleteSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare" . $this->connection->error);
         }
 
         // Se vincula el parámetro '$id' a la consulta, utilizando el método bind_param para asegurar el formato de la data (i)
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("s", $id);
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            throw new Exception("Execute" . $stmt->error);
         }
 
-        return [
-            "result" => "OK",
-            "message" => "Se ha eliminado el tipo rosa"
-        ];
+        // return [
+        // "result" => "OK",
+        // "message" => "Se ha eliminado el tipo rosa"
+        // ];
     }
-
 }

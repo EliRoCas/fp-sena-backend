@@ -24,13 +24,10 @@ class Category
         // los nombre de columna como claves del array. 
         while ($row = mysqli_fetch_assoc($response)) {
             //Se agrega cada elemento de la categoría en el array 
-            $categories[] = [
-                'id_category' => $row['id_category'],
-                'category_name' => $row['category_name']
-            ];
+            $categories[] = $row;
         }
         // Se retorna el array de las categorías 
-        return array_values($categories);
+        return $categories;
     }
 
     // MÉTODO GET para consultar una categoría por ID con sus subcategorías
@@ -39,31 +36,19 @@ class Category
         $getByIdSql = "SELECT * FROM categories WHERE id_category = ?";
         // Se ejecuta la consulta preparada para validar la conexión
         $stmt = $this->connection->prepare($getByIdSql);
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("s", $id);
         $stmt->execute();
         $response = $stmt->get_result();
+        $category = $response->fetch_assoc();
 
-        $category = null;
-        while ($row = $response->fetch_assoc()) {
-            if ($category === null) {
-                $category = [
-                    'id_category' => $row['id_category'],
-                    'category_name' => $row['category_name'],
-                ];
-            } else {
-                return [
-                    "result" => "Error",
-                    "message" => "No se encontró la categoría con el id proporcionado."
-                ];
-            }
+        if (!$category) {
+            throw new Exception('Categoría no encontrada');
         }
+
         return $category;
     }
 
@@ -75,11 +60,8 @@ class Category
         // Preparamos la consulta
         $stmt = $this->connection->prepare($filterSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
         // Usamos parámetros preparados para evitar inyección SQL
@@ -91,43 +73,41 @@ class Category
         $stmt->execute();
         $response = $stmt->get_result();
 
-        // Recogemos los resultados
-        $results = [];
-        while ($row = $response->fetch_assoc()) {
-            $results[] = $row;
+        if (!$response) {
+            throw new Exception("Execute: " . $stmt->error);
         }
 
-        return $results;
+        // Recogemos los resultados
+        $categories = [];
+        while ($row = $response->fetch_assoc()) {
+            $categories[] = $row;
+        }
+
+        return $categories;
     }
 
     // Método para agregar una nueva categoría
     public function add($params)
     {
         // Se define la consulta SQL para insertar una nueva categoría
-        $insertSql = "INSERT INTO categories (category_name) VALUES (?)";
+        $insertSql = "INSERT INTO categories (id_category, category_name) VALUES (?, ?)";
         $stmt = $this->connection->prepare($insertSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare" . $this->connection->error);
         }
 
-        $stmt->bind_param("s", $params['category_name']);
+        $stmt->bind_param("ss", $params['id_category'], $params['category_name']);
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            throw new Exception("Execute: " . $stmt->error);
         }
 
-        return [
-            "result" => "OK",
-            "message" => "Categoría agregada correctamente"
-        ];
+        // return [
+        //     "result" => "OK",
+        //     "message" => "Categoría agregada correctamente"
+        // ];
     }
 
     // Método para validar si una categoría existe 
@@ -136,11 +116,11 @@ class Category
         $existsSql = "SELECT COUNT(*) as count FROM categories WHERE id_category = ?";
         $stmt = $this->connection->prepare($existsSql);
 
-        if ($stmt === false) {
+        if (!$stmt) {
             return false;
         }
 
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("s", $id);
         $stmt->execute();
         $result = $stmt->get_result();
         $row = $result->fetch_assoc();
@@ -153,36 +133,26 @@ class Category
     {
         // Verifica si la categoría existe
         if (!$this->exists($id)) {
-            return [
-                "result" => "Error",
-                "message" => "La categoría no existe"
-            ];
+            throw new Exception("La categoría no existe");
         }
 
         $updateSql = "UPDATE categories SET category_name = ? WHERE id_category = ?";
         $stmt = $this->connection->prepare($updateSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare" . $this->connection->error);
         }
 
-        $stmt->bind_param("si", $params['category_name'], $id);
+        $stmt->bind_param("ss", $params['category_name'], $id);
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            throw new Exception("Execute" . $stmt->error);
         }
-
-        return [
-            "result" => "OK",
-            "message" => "Categoría actualizada correctamente"
-        ];
+        // return [
+        //     "result" => "OK",
+        //     "message" => "Categoría actualizada correctamente"
+        // ];
     }
 
     // Método para eliminar una categoría
@@ -192,30 +162,23 @@ class Category
         $stmt = $this->connection->prepare($deleteSql);
 
         // Verificar si la preparación fue exitosa
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
         // Se vincula el parámetro '$id' a la consulta, utilizando el método bind_param para asegurar el formato de la data
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("s", $id);
         // Se ejecuta la consulta preparada
         $result = $stmt->execute();
 
         // Se realiza la verificación de la ejecución
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            throw new Exception("Execute:" . $stmt->error);
         }
 
-        return [
-            "result" => "OK",
-            "message" => "Categoría eliminada correctamente"
-        ];
+        // return [
+        //     "result" => "OK",
+        //     "message" => "Categoría eliminada correctamente"
+        // ];
     }
-
 }

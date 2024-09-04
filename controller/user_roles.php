@@ -22,74 +22,95 @@ $requestMethod = $_SERVER['REQUEST_METHOD'];
 
 // SE ejecuta la variable de control "switch" para validar las diferentes acciones (endpoints) que el controlador puede 
 // recibir a partir de cada solicitud HTTP. 
-switch ($requestMethod) {
-    // Se le da manejo al método "GET" por medio de la estructura de control "if...elseif", para validar qué respuesta 
-    // generar según cada controller. 
-    case 'OPTIONS':
-        http_response_code(200);
-
-    case 'GET':
-        if (isset($_GET['id'])) {
-            $id = $_GET['id'];
+try {
+    switch ($requestMethod) {
+            // Se le da manejo al método "GET" por medio de la estructura de control "if...elseif", para validar qué respuesta 
+            // generar según cada controller. 
+        case 'OPTIONS':
             http_response_code(200);
-            $response = $userRole->getById($id);
-        } elseif (isset($_GET['filter'])) {
-            $filter = $_GET['filter'];
-            http_response_code(200);
-            $response = $userRole->getByName($filter);
-        } else {
-            http_response_code(200);
-            $response = $userRole->getAll();
+            break;
 
-        }
-        break;
+        case 'GET':
+            try {
+                if (isset($_GET['id'])) {
+                    $id = $_GET['id'];
+                    $response = $userRole->getById($id);
+                    if ($response) {
+                        http_response_code(200);
+                    } else {
+                        http_response_code(404);
+                        $response = ["message" => "User role not found"];
+                    }
+                } elseif (isset($_GET['filter'])) {
+                    $filter = $_GET['filter'];
+                    $response = $userRole->getByName($filter);
+                    if ($response) {
+                        http_response_code(200);
+                    }
+                } else {
+                    $response = $userRole->getAll();
+                    if ($response) {
+                        http_response_code(200);
+                    } else {
+                        http_response_code(404);
+                        $response = ["message" => "No user roles found"];
+                    }
+                }
+            } catch (Exception $e) {
+                http_response_code(500);
+                $response = ["message" => "An error occurred: " . $e->getMessage()];
+            }
+            break;
 
-    case 'POST':
-        $input = json_decode(file_get_contents('php://input'), true);
-        http_response_code(201);
-        $response = $userRole->add($input);
-        break;
+        case 'POST':
+            $input = json_decode(file_get_contents('php://input'), true);
+            $userRole->add($input);
 
-    case 'PUT':
-        $id = $_GET['id'] ?? null;
-        $input = json_decode(file_get_contents('php://input'), true);
-        // SE añade una validación para verificar si el ID está presente antes de proceder a ejecutar la solicitud. 
-        if ($id) {
-            http_response_code(200);
-            $response = $userRole->update($id, $input);
-        } else {
-            http_response_code(400);
+            http_response_code(201);
+            break;
+
+        case 'PUT':
+            $id = $_GET['id'] ?? null;
+            $input = json_decode(file_get_contents('php://input'), true);
+            // SE añade una validación para verificar si el ID está presente antes de proceder a ejecutar la solicitud. 
+            if ($id) {
+                http_response_code(200);
+                $response = $userRole->update($id, $input);
+            } else {
+                http_response_code(400);
+                $response = [
+                    'result' => 'Error',
+                    'message' => 'ID is required'
+                ];
+            }
+            break;
+
+        case 'DELETE':
+            $id = $_GET['id'] ?? null;
+            if ($id) {
+                $response = $userRole->delete($id);
+                http_response_code(204);
+            } else {
+                http_response_code(400);
+                $response = [
+                    'result' => 'Error',
+                    'message' => 'id is required'
+                ];
+            }
+            break;
+
+            // Se genera un "default" para genera un código de error HTTP, en caso de no ser permitido o conocido el método HTTP
+        default:
+            http_response_code(405);
             $response = [
                 'result' => 'Error',
-                'message' => 'ID is required'
+                'message' => 'Method not allowed'
             ];
-        }
-        break;
+            break;
+    }
 
-    case 'DELETE':
-        $id = $_GET['id'] ?? null;
-        if ($id) {
-            http_response_code(204);
-            $response = $userRole->delete($id);
-        } else {
-            http_response_code(400);
-            $response = [
-                'result' => 'Error',
-                'message' => 'ID is required'
-            ];
-        }
-        break;
-
-    // Se genera un "default" para genera un código de error HTTP, en caso de no ser permitido o conocido el método HTTP
-    default:
-        http_response_code(405);
-        $response = [
-            'result' => 'Error',
-            'message' => 'Method not allowed'
-        ];
-        break;
+    // Se envía la respuesta al cliente, luego de convertirla a formato JSON 
+    // echo json_encode($response);
+} catch (Exception $e) {
+    http_response_code(500);
 }
-
-// Se envía la respuesta al cliente, luego de convertirla a formato JSON 
-echo json_encode($response);
-?>

@@ -27,25 +27,19 @@ class Users
     {
         $getByIdSql = "SELECT * FROM users  WHERE id_user = ?";
         $stmt = $this->connection->prepare($getByIdSql);
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
         // Se vincula el parámetro '$id' a la consulta
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("s", $id);
         $stmt->execute();
         $response = $stmt->get_result();
 
         $user = $response->fetch_assoc();
 
         if (!$user) {
-            return [
-                "result" => "Error",
-                "message" => "Usuario no encontrado"
-            ];
+            throw new Exception('Usuario no encontrado');
         }
 
         return $user;
@@ -56,11 +50,8 @@ class Users
     {
         $filterSql = "SELECT * FROM users WHERE user_name LIKE ? GROUP BY id_user";
         $stmt = $this->connection->prepare($filterSql);
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
         // Se vincula el parámetro '$value' a la consulta
         $likeValue = "%$value%";
@@ -81,17 +72,15 @@ class Users
     {
         if (
             !isset($params["user_name"]) || !isset($params["user_lastname"]) || !isset($params["fo_document_type"]) ||
-            !isset($params["document_number"]) || !isset($params["email"]) || !isset($params["password"])
+            !isset($params["document_number"]) || !isset($params["email"]) || !isset($params["password"]) || !isset($params["id_user"])
         ) {
-            return [
-                "result" => "Error",
-                "message" => "Todos los campos son requeridos" . $this->connection->error,
-            ];
+            throw new Exception("Todos los campos son requeridos");
         }
 
         $hashedPassword = password_hash($params["password"], PASSWORD_BCRYPT);
 
         $insertSql = "INSERT INTO users (
+            id_user, 
             user_name, 
             user_lastname, 
             fo_document_type, 
@@ -99,17 +88,15 @@ class Users
             email, 
             password
         ) 
-        VALUES (?, ?, ?, ?, ?, ?)";
+        VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->connection->prepare($insertSql);
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta" . $this->connection->error,
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
-        $stmt->bind_param (
-            "ssiiss",
+        $stmt->bind_param(
+            "sssssss",
+            $params["id_user"],
             $params["user_name"],
             $params["user_lastname"],
             $params["fo_document_type"],
@@ -119,16 +106,13 @@ class Users
         );
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta" . $stmt->error,
-            ];
+        if (!$result) {
+            throw new Exception("Execute:" . $stmt->error);
         }
-        return [
-            "result" => "Ok",
-            "message" => "El usuario ha sido agregado con éxito",
-        ];
+        // return [
+        //     "result" => "Ok",
+        //     "message" => "El usuario ha sido agregado con éxito",
+        // ];
     }
 
     // MÉTODO EDIT 
@@ -149,15 +133,12 @@ class Users
         $updatSql = "UPDATE users SET user_name = ?, user_lastname = ?, fo_document_type = ?, document_number = ?,
          email = ?, password = ? WHERE id_user = ?";
         $stmt = $this->connection->prepare($updatSql);
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
         $stmt->bind_param(
-            "ssiissi",
+            "sssssss",
             $params["user_name"],
             $params["user_lastname"],
             $params["fo_document_type"],
@@ -168,16 +149,13 @@ class Users
         );
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            throw new Exception("Execute:" . $stmt->error);
         }
-        return [
-            "result" => "OK",
-            "message" => "El usuario ha sido actualizado con éxito"
-        ];
+        // return [
+        //     "result" => "OK",
+        //     "message" => "El usuario ha sido actualizado con éxito"
+        // ];
     }
 
     // MÉTODO DELETE 
@@ -185,26 +163,19 @@ class Users
     {
         $deleteSql = "DELETE FROM users WHERE  id_user = ?";
         $stmt = $this->connection->prepare($deleteSql);
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta" . $this->connection->error,
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("s", $id);
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta" . $this->connection->error,
-            ];
+        if (!$result) {
+            throw new Exception("Execute:" . $stmt->error);
         }
 
-        return [
-            "result" => "Ok",
-            "message" => "El usuario ha sido eliminado",
-        ];
+        // return [
+        //     "result" => "Ok",
+        //     "message" => "El usuario ha sido eliminado",
+        // ];
     }
-
 }

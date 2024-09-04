@@ -11,8 +11,8 @@ class DocumentType
     //MÉTODO GET para consultar todos los tipos de documentos 
     public function getAll()
     {
-        $getAll = "SELECT * FROM document_types ORDER BY document_type_name";
-        $res = mysqli_query($this->connection, $getAll);
+        $getAllSql = "SELECT * FROM document_types ORDER BY document_type_name";
+        $res = mysqli_query($this->connection, $getAllSql);
         $d_types = [];
 
         while ($row = mysqli_fetch_assoc($res)) {
@@ -25,8 +25,8 @@ class DocumentType
     // MÉTODO GET para consultar tipos de documentos por ID
     public function getById($id)
     {
-        $getById = "SELECT * FROM document_types WHERE id_document_type = ? ";
-        $stmt = $this->connection->prepare($getById);
+        $getByIdSql = "SELECT * FROM document_types WHERE id_document_type = ? ";
+        $stmt = $this->connection->prepare($getByIdSql);
 
         if (!$stmt) {
             // return [
@@ -55,8 +55,8 @@ class DocumentType
     // Método para Filtrar 
     public function getByName($value)
     {
-        $filter = "SELECT * FROM document_types WHERE document_type_name LIKE ?";
-        $stmt = $this->connection->prepare($filter);
+        $filterSql = "SELECT * FROM document_types WHERE document_type_name LIKE ?";
+        $stmt = $this->connection->prepare($filterSql);
 
         if (!$stmt) {
             // return [
@@ -98,8 +98,8 @@ class DocumentType
             throw new Exception("Todos los campos son requeridos");
         }
 
-        $post = "INSERT INTO document_types (id_document_type, document_type_name) VALUES (?, ?)";
-        $stmt = $this->connection->prepare($post);
+        $postSql = "INSERT INTO document_types (id_document_type, document_type_name) VALUES (?, ?)";
+        $stmt = $this->connection->prepare($postSql);
 
         if (!$stmt) {
             // return [
@@ -117,7 +117,7 @@ class DocumentType
             //     "result" => "Error",
             //     "message" => "Error al ejecutar la consulta: " . $stmt->error
             // ];
-            throw new Exception("Excecute: " . $stmt->error);
+            throw new Exception("Execute: " . $stmt->error);
         }
 
         // Se omite el mensaje para mejorar la seguridad de la app
@@ -138,8 +138,8 @@ class DocumentType
             throw new Exception("Todos los campos son requeridos");
         }
 
-        $patch = "UPDATE document_types SET document_type_name = ? WHERE id_document_type = ?";
-        $stmt = $this->connection->prepare($patch);
+        $patchSql = "UPDATE document_types SET document_type_name = ? WHERE id_document_type = ?";
+        $stmt = $this->connection->prepare($patchSql);
 
         if (!$stmt) {
             // return [
@@ -149,7 +149,7 @@ class DocumentType
             throw new Exception("Prepare: " . $this->connection->error);
         }
 
-        $stmt->bind_param("ss", $id, $params["document_type_name"],);
+        $stmt->bind_param("ss", $params["document_type_name"], $id);
         $result = $stmt->execute();
 
         if (!$result) {
@@ -192,7 +192,7 @@ class DocumentType
         }
 
         if ($stmt->affected_rows === 0) {
-            return false; 
+            return false;
         }
 
         // return [

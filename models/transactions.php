@@ -14,7 +14,7 @@ class Transaction
     {
         $getAllSql = "SELECT * FROM transactions ORDER BY transaction_date";
         $response = mysqli_query($this->connection, $getAllSql);
-        
+
         $transactions = [];
 
         while ($row = mysqli_fetch_assoc($response)) {
@@ -29,24 +29,18 @@ class Transaction
         $getByIdSql = "SELECT * FROM transactions WHERE id_transaction = ?";
         $stmt = $this->connection->prepare($getByIdSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
         // Se vincula el parámetro '$id' a la consulta
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("s", $id);
         $stmt->execute();
         $res = $stmt->get_result();
         $transaction = $res->fetch_assoc();
 
         if (!$transaction) {
-            return [
-                "result" => "Error",
-                "message" => "Transacción no encontrada"
-            ];
+            throw new Exception('Transacción no encontrada');
         }
 
         return $transaction;
@@ -59,11 +53,8 @@ class Transaction
         // Preparamos la consulta
         $stmt = $this->connection->prepare($filterSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
         // Usamos parámetros preparados para evitar inyección SQL
@@ -72,12 +63,12 @@ class Transaction
         $stmt->execute();
         $response = $stmt->get_result();
 
-        $result = [];
+        $transactions = [];
         while ($row = $response->fetch_assoc()) {
-            $result[] = $row;
+            $transactions[] = $row;
         }
 
-        return $result;
+        return $transactions;
     }
 
     // Filtrar por "transaction_type" 
@@ -86,11 +77,8 @@ class Transaction
         $filterByTypeSql = "SELECT * FROM transactions WHERE transaction_type = ? ORDER BY transaction_type, transaction_name";
         $stmt = $this->connection->prepare($filterByTypeSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
         $stmt->bind_param("s", $type);
@@ -111,11 +99,8 @@ class Transaction
         $filterByDateSql = "SELECT * FROM transactions WHERE transaction_date = ?";
         $stmt = $this->connection->prepare($filterByDateSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
         $stmt->bind_param("s", $date);
@@ -137,16 +122,14 @@ class Transaction
         if (
             !isset($params["transaction_name"]) || !isset($params["transaction_date"]) ||
             !isset($params["transaction_amount"]) || !isset($params["transaction_type"]) ||
-            !isset($params["fo_category"])
+            !isset($params["fo_category"]) || !isset($params["id_transaction"])
         ) {
-            return [
-                "result" => "Error",
-                "message" => "Los campos obligatorios son requeridos"
-            ];
+            throw new Exception("Todos los campos son requeridos");
         }
 
         // Preparar la consulta SQL
         $insertSql = "INSERT INTO transactions (
+        id_transaction,
         transaction_name,
          transaction_rose_export, 
          fo_rose_type, 
@@ -157,17 +140,15 @@ class Transaction
          transaction_type, 
          fo_category, 
          fo_subcategory) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->connection->prepare($insertSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
         // Preparar valores para bind_param
+        $id_transaction = $params["id_transaction"];
         $transaction_name = $params["transaction_name"];
         $transaction_rose_export = $params["transaction_rose_export"] ?? null;
         $fo_rose_type = $params["fo_rose_type"] ?? null;
@@ -181,7 +162,8 @@ class Transaction
 
         // Bind de parámetros
         $stmt->bind_param(
-            "ssissdssii",
+            "ssssssdssss",
+            $id_transaction,
             $transaction_name,
             $transaction_rose_export,
             $fo_rose_type,
@@ -195,17 +177,14 @@ class Transaction
         );
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            throw new Exception("Execute:" . $stmt->error);
         }
 
-        return [
-            "result" => "OK",
-            "message" => "La transacción ha sido agregada"
-        ];
+        // return [
+        //     "result" => "OK",
+        //     "message" => "La transacción ha sido agregada"
+        // ];
     }
 
     // MÉTODO para editar 
@@ -234,11 +213,8 @@ class Transaction
         WHERE id_transaction = ?";
         $stmt = $this->connection->prepare($updateSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
         // Preparar valores para bind_param
@@ -255,7 +231,7 @@ class Transaction
 
         // Bind de parámetros
         $stmt->bind_param(
-            "ssissdssiii",
+            "sssssdsssss",
             $transaction_name,
             $transaction_rose_export,
             $fo_rose_type,
@@ -271,16 +247,13 @@ class Transaction
 
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            throw new Exception("Execute:" . $stmt->error);
         }
-        return [
-            "result" => "OK",
-            "message" => "La transacción ha sido actualizada con éxito"
-        ];
+        // return [
+        //     "result" => "OK",
+        //     "message" => "La transacción ha sido actualizada con éxito"
+        // ];
     }
 
     // MÉTODO DELETE 
@@ -289,26 +262,20 @@ class Transaction
         $deleteSql = "DELETE FROM transactions WHERE id_transaction = ?";
         $stmt = $this->connection->prepare($deleteSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("s", $id);
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            throw new Exception("Execute:" . $stmt->error);
         }
 
-        return [
-            "result" => "OK",
-            "message" => "La transacción ha sido eliminada"
-        ];
+        // return [
+        //     "result" => "OK",
+        //     "message" => "La transacción ha sido eliminada"
+        // ];
     }
 }

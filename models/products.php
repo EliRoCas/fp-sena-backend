@@ -28,24 +28,18 @@ class Product
         $getByIdSql = "SELECT * FROM products WHERE id_product = ?";
 
         $stmt = $this->connection->prepare($getByIdSql);
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("s", $id);
         $stmt->execute();
         $response = $stmt->get_result();
 
         $product = $response->fetch_assoc();
 
         if (!$product) {
-            return [
-                "result" => "Error",
-                "message" => "Producto no encontrado"
-            ];
+            throw new Exception('Producto no encontrado');
         }
 
         return $product;
@@ -57,11 +51,8 @@ class Product
         $filterSql = "SELECT * FROM products WHERE product_name LIKE ? ORDER BY product_name";
 
         $stmt = $this->connection->prepare($filterSql);
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
         // Se prepara el valor para los filtros de búsqueda
@@ -84,15 +75,14 @@ class Product
         if (
             !isset($params["product_name"]) ||
             !isset($params["quantity"]) ||
-            !isset($params["fo_category"])
+            !isset($params["fo_category"]) ||
+            !isset($params["id_product"])
         ) {
-            return [
-                "result" => "Error",
-                "message" => "Los campos obligatorios son requeridos"
-            ];
+            throw new Exception("Los campos obligatorios son requeridos");
         }
 
         $insertSql = "INSERT INTO products (
+            id_product,
             product_name, 
             fo_subcategory, 
             product_img, 
@@ -100,17 +90,15 @@ class Product
             quantity, 
             fo_category
             ) 
-        VALUES (?, ?, ?, ?, ?, ?)";
+        VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->connection->prepare($insertSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare: " . $this->connection->error);
         }
 
         // Preparar valores para bind_param
+        $id_product = $params["id_product"];
         $product_name = $params["product_name"];
         $fo_subcategory = $params["fo_subcategory"];
         $product_img = $params["product_img"];
@@ -119,7 +107,8 @@ class Product
         $fo_category = $params["fo_category"];
 
         $stmt->bind_param(
-            "ssssdi",
+            "sssssds",
+            $id_product,
             $product_name,
             $fo_subcategory,
             $product_img,
@@ -129,17 +118,14 @@ class Product
         );
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            throw new Exception("Execute: " . $stmt->error);
         }
 
-        return [
-            "result" => "OK",
-            "message" => "Producto agregado correctamente"
-        ];
+        // return [
+        //     "result" => "OK",
+        //     "message" => "Producto agregado correctamente"
+        // ];
     }
 
     // Método EDIT para actualizar un producto
@@ -165,11 +151,8 @@ class Product
         WHERE id_product = ?";
         $stmt = $this->connection->prepare($updateSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare: " . $this->connection->error);
         }
 
         // Preparar valores para bind_param
@@ -181,7 +164,7 @@ class Product
         $fo_category = $params["fo_category"];
 
         $stmt->bind_param(
-            "ssssdii",
+            "ssssdss",
             $product_name,
             $fo_subcategory,
             $product_img,
@@ -192,17 +175,14 @@ class Product
         );
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            throw new Exception("Execute: " . $stmt->error);
         }
 
-        return [
-            "result" => "OK",
-            "message" => "Producto actualizado correctamente"
-        ];
+        // return [
+        //     "result" => "OK",
+        //     "message" => "Producto actualizado correctamente"
+        // ];
     }
 
     // Método DELETE para eliminar un producto
@@ -211,28 +191,20 @@ class Product
         $deleteSql = "DELETE FROM products WHERE id_product = ?";
         $stmt = $this->connection->prepare($deleteSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare: " . $this->connection->error);
         }
 
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("s", $id);
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            throw new Exception("Execute: " . $stmt->error);
         }
 
-        return [
-            "result" => "OK",
-            "message" => "Producto eliminado correctamente"
-        ];
+        // return [
+        //     "result" => "OK",
+        //     "message" => "Producto eliminado correctamente"
+        // ];
     }
-
 }
-

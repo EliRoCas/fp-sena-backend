@@ -17,11 +17,8 @@ class Subcategory
         //Se prepara la consulta con una conexión a la DB 
         //la variable $stmt es una instancia de la clase "mysqli_stmt" para sentencias SQL preparadas
         $stmt = $this->connection->prepare($getAllSql);
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
         // Se ejecuta la consulta preparada, se utiliza "GET" para obtener el resultado y se inicializa un array vacío para
@@ -44,24 +41,18 @@ class Subcategory
     {
         $getById = "SELECT * FROM subcategories WHERE id_subcategory = ?";
         $stmt = $this->connection->prepare($getById);
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
         // Se vincula el parámetro '$id' a la consulta
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("s", $id);
         $stmt->execute();
         $response = $stmt->get_result();
         $subcategory = $response->fetch_assoc();
 
         if (!$subcategory) {
-            return [
-                "result" => "Error",
-                "message" => "Subcategoría no encontrada"
-            ];
+            throw new Exception('Subcategoría no encontrada');
         }
 
         return $subcategory;
@@ -77,11 +68,8 @@ class Subcategory
         // Preparamos la consulta
         $stmt = $this->connection->prepare($filterSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
         // Usamos parámetros preparados para evitar inyección SQL
         // Se incluye (%) para indicar que cualquier dato puede estar antes o después del valor
@@ -92,44 +80,48 @@ class Subcategory
         $stmt->execute();
         $response = $stmt->get_result();
 
-        // Recogemos los resultados
-        $results = [];
-        while ($row = $response->fetch_assoc()) {
-            $results[] = $row;
+        if (!$response) {
+            throw new Exception("Execute: " . $stmt->error);
         }
 
-        return $results;
+        // Recogemos los resultados
+        $subcategories = [];
+        while ($row = $response->fetch_assoc()) {
+            $subcategories[] = $row;
+        }
+
+        return $subcategories;
     }
 
 
     // Método para agregar una nueva subcategoría
-    public function add($subcategory_name, $fo_category)
+    public function add($params)
     {
         // Se define la consulta SQL para insertar una nueva subcategoría
-        $insertSql = "INSERT INTO subcategories (subcategory_name, fo_category) VALUES (?, ?)";
+        $insertSql = "INSERT INTO subcategories (id_subcategory, subcategory_name, fo_category) 
+        VALUES (?, ?, ?)";
         $stmt = $this->connection->prepare($insertSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare" . $this->connection->error);
         }
 
-        $stmt->bind_param("si", $subcategory_name, $fo_category);
+        $stmt->bind_param(
+            "sss",
+            $params['id_subcategory'],
+            $params['subcategory_name'],
+            $params['fo_category']
+        );
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            throw new Exception("Execute: " . $stmt->error);
         }
 
-        return [
-            "result" => "OK",
-            "message" => "Subcategoría agregada correctamente"
-        ];
+        // return [
+        //     "result" => "OK",
+        //     "message" => "Subcategoría agregada correctamente"
+        // ];
     }
 
     // Método para validar si una subcategoría existe 
@@ -140,11 +132,11 @@ class Subcategory
         WHERE id_subcategory = ?";
         $stmt = $this->connection->prepare($existsSql);
 
-        if ($stmt === false) {
+        if (!$stmt) {
             return false;
         }
 
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("s", $id);
         $stmt->execute();
         $result = $stmt->get_result();
         $row = $result->fetch_assoc();
@@ -153,40 +145,31 @@ class Subcategory
     }
 
     // Método para editar una subcategoría existente
-    public function update($id, $subcategory_name, $fo_category)
+    public function update($id, $params)
     {
         // Verifica si la subcategoría existe
         if (!$this->exists($id)) {
-            return [
-                "result" => "Error",
-                "message" => "La subcategoría no existe"
-            ];
+            throw new Exception("Subcategoría no encontrada");
         }
 
         $updateSql = "UPDATE subcategories SET subcategory_name = ?, fo_category = ? WHERE id_subcategory = ?";
         $stmt = $this->connection->prepare($updateSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare" . $this->connection->error);
         }
 
-        $stmt->bind_param("sii", $subcategory_name, $fo_category, $id);
+        $stmt->bind_param("sss", $params['subcategory_name'], $params['fo_category'], $id);
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            throw new Exception("Execute" . $stmt->error);
         }
 
-        return [
-            "result" => "OK",
-            "message" => "Subcategoría actualizada correctamente"
-        ];
+        // return [
+        //     "result" => "OK",
+        //     "message" => "Subcategoría actualizada correctamente"
+        // ];
     }
 
     // Método para eliminar una subcategoría
@@ -196,30 +179,23 @@ class Subcategory
         $stmt = $this->connection->prepare($delete);
 
         // Verificar si la preparación fue exitosa
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare" . $this->connection->error);
         }
 
         // Se vincula el parámetro '$id' a la consulta, utilizando el método bind_param para asegurar el formato de la data
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("s", $id);
         // Se ejecuta la consulta preparada
         $result = $stmt->execute();
 
         // Se realiza la verificación de la ejecución
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            throw new Exception("Execute" . $stmt->error);
         }
 
-        return [
-            "result" => "OK",
-            "message" => "Subcategoría eliminada correctamente"
-        ];
+        // return [
+        //     "result" => "OK",
+        //     "message" => "Subcategoría eliminada correctamente"
+        // ];
     }
-
 }

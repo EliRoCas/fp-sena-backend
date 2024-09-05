@@ -110,7 +110,7 @@ try {
     }
 
     // Se envía la respuesta al cliente, luego de convertirla a formato JSON 
-    // echo json_encode($response);
+    echo json_encode($response);
 } catch (Exception $e) {
     http_response_code(500);
 }

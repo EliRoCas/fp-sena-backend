@@ -95,6 +95,6 @@ try {
     echo json_encode($response);
 } catch (Exception $e) {
     http_response_code(500);
-    $response = ["message" => "An error occurred: " . $e->getMessage()];
-    echo json_encode($response);
+    // $response = ["message" => "An error occurred: " . $e->getMessage()];
+    // echo json_encode($response);
 }

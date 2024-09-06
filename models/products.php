@@ -8,14 +8,11 @@ class Product
         $this->connection = $connection;
     }
 
+
     // Método GET para consultar todos los productos con sus categorías 
     public function getAll()
     {
-        $getAllSql = "SELECT p.*, cat.category_name AS categories
-        FROM products p 
-        INNER JOIN categories cat ON p.fo_category = cat.id_category
-        ORDER BY id_product";
-
+        $getAllSql = "SELECT * FROM products ORDER BY id_product";
         $response = mysqli_query($this->connection, $getAllSql);
         $products = [];
 
@@ -28,63 +25,48 @@ class Product
     // Método GET para consultar un producto por ID con sus categorías 
     public function getById($id)
     {
-        $getByIdSql = "SELECT p.*, cat.category_name AS category
-            FROM products p
-            INNER JOIN categories cat ON p.fo_category = cat.id_category
-            WHERE p.id_product = ?
-            ORDER BY p.product_name";
+        $getByIdSql = "SELECT * FROM products WHERE id_product = ?";
 
         $stmt = $this->connection->prepare($getByIdSql);
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("s", $id);
         $stmt->execute();
         $response = $stmt->get_result();
 
         $product = $response->fetch_assoc();
 
         if (!$product) {
-            return [
-                "result" => "Error",
-                "message" => "Producto no encontrado"
-            ];
+            throw new Exception('Producto no encontrado');
         }
 
         return $product;
     }
 
-    // Método DELETE para eliminar un producto
-    public function delete($id)
+    // MÉTODO FILTRAR para consultar productos por nombre, tipo o categoría
+    public function getByName($value)
     {
-        $deleteSql = "DELETE FROM products WHERE id_product = ?";
-        $stmt = $this->connection->prepare($deleteSql);
+        $filterSql = "SELECT * FROM products WHERE product_name LIKE ? ORDER BY product_name";
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        $stmt = $this->connection->prepare($filterSql);
+        if (!$stmt) {
+            throw new Exception("Prepare:" . $this->connection->error);
         }
 
-        $stmt->bind_param("i", $id);
-        $result = $stmt->execute();
+        // Se prepara el valor para los filtros de búsqueda
+        $likeValue = "%$value%";
+        $stmt->bind_param("s", $likeValue);
+        $stmt->execute();
+        $response = $stmt->get_result();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        $products = [];
+        while ($row = $response->fetch_assoc()) {
+            $products[] = $row;
         }
 
-        return [
-            "result" => "OK",
-            "message" => "Producto eliminado correctamente"
-        ];
+        return $products;
     }
 
     // Método ADD para agregar un nuevo producto
@@ -93,31 +75,30 @@ class Product
         if (
             !isset($params["product_name"]) ||
             !isset($params["quantity"]) ||
-            !isset($params["fo_category"])
+            !isset($params["fo_category"]) ||
+            !isset($params["id_product"])
         ) {
-            return [
-                "result" => "Error",
-                "message" => "Los campos obligatorios son requeridos"
-            ];
+            throw new Exception("Los campos obligatorios son requeridos");
         }
 
-        $insertSql = "INSERT INTO products (product_name, 
+        $insertSql = "INSERT INTO products (
+            id_product,
+            product_name, 
             fo_subcategory, 
             product_img, 
             product_description, 
             quantity, 
-            fo_category) 
-        VALUES (?, ?, ?, ?, ?, ?)";
+            fo_category
+            ) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->connection->prepare($insertSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare: " . $this->connection->error);
         }
 
         // Preparar valores para bind_param
+        $id_product = $params["id_product"];
         $product_name = $params["product_name"];
         $fo_subcategory = $params["fo_subcategory"];
         $product_img = $params["product_img"];
@@ -126,7 +107,8 @@ class Product
         $fo_category = $params["fo_category"];
 
         $stmt->bind_param(
-            "ssssdi",
+            "sssssds",
+            $id_product,
             $product_name,
             $fo_subcategory,
             $product_img,
@@ -136,17 +118,14 @@ class Product
         );
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            throw new Exception("Execute: " . $stmt->error);
         }
 
-        return [
-            "result" => "OK",
-            "message" => "Producto agregado correctamente"
-        ];
+        // return [
+        //     "result" => "OK",
+        //     "message" => "Producto agregado correctamente"
+        // ];
     }
 
     // Método EDIT para actualizar un producto
@@ -172,11 +151,8 @@ class Product
         WHERE id_product = ?";
         $stmt = $this->connection->prepare($updateSql);
 
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare: " . $this->connection->error);
         }
 
         // Preparar valores para bind_param
@@ -188,7 +164,7 @@ class Product
         $fo_category = $params["fo_category"];
 
         $stmt->bind_param(
-            "ssssdii",
+            "ssssdss",
             $product_name,
             $fo_subcategory,
             $product_img,
@@ -199,52 +175,36 @@ class Product
         );
         $result = $stmt->execute();
 
-        if ($result === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al ejecutar la consulta: " . $stmt->error
-            ];
+        if (!$result) {
+            throw new Exception("Execute: " . $stmt->error);
         }
 
-        return [
-            "result" => "OK",
-            "message" => "Producto actualizado correctamente"
-        ];
+        // return [
+        //     "result" => "OK",
+        //     "message" => "Producto actualizado correctamente"
+        // ];
     }
 
-    // MÉTODO FILTRAR para consultar productos por nombre, tipo o categoría
-    public function getByName($value)
+    // Método DELETE para eliminar un producto
+    public function delete($id)
     {
-        $filterSql = "SELECT p.*, cat.category_name AS category, sub.subcategory_name AS subcategory
-            FROM products p
-            INNER JOIN categories cat ON p.fo_category = cat.id_category
-            INNER JOIN subcategories sub ON p.fo_subcategory = sub.id_subcategory
-            WHERE p.product_name LIKE ? 
-               OR sub.subcategory_name LIKE ? 
-               OR cat.category_name LIKE ?
-            ORDER BY p.product_name";
+        $deleteSql = "DELETE FROM products WHERE id_product = ?";
+        $stmt = $this->connection->prepare($deleteSql);
 
-        $stmt = $this->connection->prepare($filterSql);
-        if ($stmt === false) {
-            return [
-                "result" => "Error",
-                "message" => "Error al preparar la consulta: " . $this->connection->error
-            ];
+        if (!$stmt) {
+            throw new Exception("Prepare: " . $this->connection->error);
         }
 
-        // Se prepara el valor para los filtros de búsqueda
-        $likeValue = "%$value%";
-        $stmt->bind_param("sss", $likeValue, $likeValue, $likeValue);
-        $stmt->execute();
-        $response = $stmt->get_result();
+        $stmt->bind_param("s", $id);
+        $result = $stmt->execute();
 
-        $products = [];
-        while ($row = $response->fetch_assoc()) {
-            $products[] = $row;
+        if (!$result) {
+            throw new Exception("Execute: " . $stmt->error);
         }
 
-        return $products;
+        // return [
+        //     "result" => "OK",
+        //     "message" => "Producto eliminado correctamente"
+        // ];
     }
 }
-
-?>
